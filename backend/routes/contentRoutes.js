@@ -18,18 +18,17 @@
             // --- Step 1: Generate Text Content & Image Prompt ---
             console.log("Calling Gemini for text content...");
             const textContent = await generatePostContent(userPrompt);
-
-            if (!textContent || !textContent.image_prompt || !textContent.caption) {
+            if (!textContent || !textContent.imagePrompt || !textContent.caption) {
                  console.error("Failed to get valid content structure from Gemini.");
                 throw new Error("AI failed to generate required content components.");
             }
             console.log("Received text content from Gemini.");
-            console.log("Image Prompt for HF:", textContent.image_prompt);
+            console.log("Image Prompt for HF:", textContent.imagePrompt);
 
 
             // --- Step 2: Generate Image ---
              console.log("Calling Hugging Face for image generation...");
-             const imageBuffer = await generateImage(textContent.image_prompt);
+             const imageBuffer = await generateImage(textContent.imagePrompt);
 
              if (!imageBuffer) {
                  console.error("Failed to generate image from Hugging Face.");
@@ -39,25 +38,22 @@
 
 
              // --- Step 3: Upload Image to Cloudinary ---
-            console.log("Uploading image buffer to Cloudinary...");
-            const uploadResult = await uploadImage(imageBuffer);
+console.log("Uploading image buffer to Cloudinary...");
+const imageUrl = await uploadImage(imageBuffer);
 
-            if (!uploadResult || !uploadResult.secure_url) {
-                console.error("Failed to upload image to Cloudinary.");
-                throw new Error("Failed to store the generated image.");
-            }
-            console.log("Image uploaded to Cloudinary:", uploadResult.secure_url);
+if (!imageUrl) {
+  console.error("Failed to upload image to Cloudinary.");
+  throw new Error("Failed to store the generated image.");
+}
+console.log("Image uploaded to Cloudinary:", imageUrl);
 
+// --- Step 4: Send Success Response ---
+const finalResult = {
+  caption: textContent.caption,
+  hashtags: textContent.hashtags,
+  imageUrl, // Already a string
+};
 
-            // --- Step 4: Send Success Response ---
-            const finalResult = {
-                caption: textContent.caption,
-                hashtags: textContent.hashtags, // Will be an array or null
-                imageUrl: uploadResult.secure_url, // The public URL from Cloudinary
-                // Optionally include prompts for reference/debugging
-                // userPrompt: userPrompt,
-                // imagePrompt: textContent.image_prompt
-            };
 
             res.status(200).json({ status: 'Success', data: finalResult });
 

@@ -5,6 +5,7 @@ require('./services/aiService');     // This will run the Gemini setup code and 
 require('./services/cloudinaryService'); // This will run the Cloudinary setup code and logs
 const businessRoutes = require('./routes/businessRoutes'); // Import the router
 const contentRoutes = require('./routes/contentRoutes');
+const authRoutes = require('./routes/authRoutes');
         
 // Import necessary packages
 const express = require('express');
@@ -21,6 +22,7 @@ app.use(express.json()); // Allow app to parse JSON request bodies
 // --- Mount API Routers ---
 app.use('/api/business', businessRoutes); // Use it for paths starting with /api/business
 app.use('/api/content', contentRoutes);
+app.use('/api/auth', authRoutes);
 
 // Keep the test-db route for now if you like, or remove it
 // app.get('/test-db', async (req, res) => { ... });
