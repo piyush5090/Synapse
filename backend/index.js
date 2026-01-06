@@ -1,18 +1,40 @@
-// Load environment variables from .env file
-require('dotenv').config(); 
-const supabase = require('./config/supabaseClient');
-require('./services/aiService');     // This will run the Gemini setup code and logs
-require('./services/cloudinaryService'); // This will run the Cloudinary setup code and logs
-const businessRoutes = require('./routes/businessRoutes'); // Import the router
-const contentRoutes = require('./routes/contentRoutes');
-const authRoutes = require('./routes/authRoutes');
-        
-// Import necessary packages
-const express = require('express');
-const cors = require('cors');
-        
+// Load environment variables
+import dotenv from "dotenv";
+dotenv.config();
+
+// Core packages
+import express from "express";
+import cors from "cors";
+
+// Services (executed on import)
+//import "./services/aiService.js";
+import { initAI } from "./services/aiService.js";
+import { initCloudinary } from "./services/cloudinaryService.js";
+
+// Supabase client
+import supabase from "./config/supabaseClient.js";
+
+// Routes
+import businessRoutes from "./routes/businessRoutes.js";
+import contentRoutes from "./routes/contentRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import metaRoutes from "./routes/meta_routes.js";
+//import * as metaHelper from "../utils/metaHelper.js";
+
 // Initialize the Express app
 const app = express();
+
+async function startServer() {
+  try {
+    // initialize services before starting the server
+    await initAI();
+    initCloudinary();
+    console.log("All services initialized.");
+  } catch (err) {
+    console.error("Service initialization failed. Exiting.", err);
+    process.exit(1);
+  }
+}
         
 // Middleware
 app.use(cors()); // Enable Cross-Origin Resource Sharing
@@ -23,22 +45,13 @@ app.use(express.json()); // Allow app to parse JSON request bodies
 app.use('/api/business', businessRoutes); // Use it for paths starting with /api/business
 app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
-
-// Keep the test-db route for now if you like, or remove it
-// app.get('/test-db', async (req, res) => { ... });
-
-
-// --- Define API Routes ---
+app.use('/api/meta',metaRoutes);
         
-// Simple health check route
-app.get('/health', (req, res) => {
+// Simple Backend check route
+app.get('/', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Synapse backend is running!' });
 });
         
-// --- Start the Server ---
-        
-// Get port from environment variables or default to 3001
-// We use 3001 to avoid conflict with React's default 3000
 const PORT = process.env.PORT || 3001; 
         
 app.listen(PORT, () => {
@@ -61,3 +74,5 @@ app.get('/test-db', async (req, res) => {
     // ... error response ...
   }
 });
+
+startServer();

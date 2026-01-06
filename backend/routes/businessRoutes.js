@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabaseClient'); // Adjust path as needed
+const { protect } = require('../middleware/authMiddleware');
         
 // --- Business API Endpoints ---
         
 // GET /api/business - Fetch business details (assuming only one for now)
-router.get('/', async (req, res) => {
+router.get('/',protect, async (req, res) => {
     console.log('GET /api/business request received');
     try {
         // Fetch the first business found (simple approach for single business)
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
 });
         
 // POST /api/business - Create a new business profile (or update if exists - simple approach)
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
     const { name, description, website_url } = req.body;
     console.log('POST /api/business request received with body:', req.body);
         

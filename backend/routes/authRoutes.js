@@ -18,7 +18,7 @@ router.post('/signup',async (req,res)=>{
 
         if(error) throw error;
 
-        // If email confirmation is enabled in Supabase (default), user won't be able to login immediately
+        // If email confirmation is disabled in Supabase (default), user won't be able to login immediately
         // You can disable "Confirm email" in Supabase Dashboard > Authentication > Providers > Email
         // for easier testing.
         

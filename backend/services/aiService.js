@@ -1,46 +1,42 @@
-// ===============================================
-// AI Service - Gemini (Caption + Hashtags + ImagePrompt)
-//              + Hugging Face (Image Generation)
-// ===============================================
+// services/aiService.js
+// Minimal ESM version: async init + functions, uses console for logs
 
-// Load environment variables
-require('dotenv').config();
-const { GoogleGenAI } = require('@google/genai');
-const fetch = require('node-fetch'); // npm install node-fetch
+import dotenv from "dotenv";
+dotenv.config();
 
-// --- Helper Function ---
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { GoogleGenAI } from "@google/genai";
 
-// --- Initialize Google Gemini ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) {
-  console.error("❌ Error: Missing GEMINI_API_KEY in .env file.");
-}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let ai;//Initializing a new Gemini Client
-try {
-  ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  console.log("✅ Google Gemini client initialized successfully.");
-} catch (error) {
-  console.error("❌ Failed to initialize Google Gemini client:", error);
-}
+let aiClient = null;
+let initialized = false;
 
-/**
- * Generates post content (caption, hashtags, imagePrompt) using Gemini in JSON format.
- * @param {string} userPrompt - The initial prompt from the user.
- * @param {object} [businessDetails={}] - Optional business info.
- * @returns {Promise<object|null>} Object with caption, hashtags, and imagePrompt.
- */
-async function generatePostContent(userPrompt, businessDetails = {}) {
-  if (!ai) {
-    console.error("❌ Gemini AI client not initialized.");
-    return null;
+export async function initAI() {
+  if (initialized) return;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    console.error("❌ Missing GEMINI_API_KEY in .env");
+    throw new Error("Missing GEMINI_API_KEY");
   }
 
   try {
-    console.log("🧠 Generating all content (caption, hashtags, image prompt) in one Gemini call...");
+    console.log("Initializing Gemini client...");
+    aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    initialized = true;
+    console.log("✅ Gemini initialized");
+  } catch (err) {
+    console.error("❌ Failed to initialize Gemini:", err);
+    throw err;
+  }
+}
 
-    const textPrompt = `
+export async function generatePostContent(userPrompt, businessDetails = {}) {
+  if (!aiClient) {
+    console.error("❌ Gemini client not initialized.");
+    throw new Error("AI client not initialized");
+  }
+
+  const textPrompt = `
 You are a creative social media strategist and AI prompt engineer.
 
 Task:
@@ -49,7 +45,7 @@ Based on the user's idea below, generate:
 2. A list of 5-10 relevant hashtags.
 3. A detailed image prompt (5–6 sentences) describing a scene for an AI image generator, based on the idea and caption. The image prompt should mention style (e.g., photorealistic, digital illustration) and mood.
 
-Return your answer **strictly in JSON format** with this structure:
+Return your answer strictly in JSON format with this structure:
 {
   "caption": "Your caption text here",
   "hashtags": ["#example", "#fun", "#creative"],
@@ -60,94 +56,60 @@ User idea: "${userPrompt}"
 Business details: ${JSON.stringify(businessDetails)}
 `;
 
-    // --- Gemini Call ---
-    const response = await ai.models.generateContent({
+  try {
+    const response = await aiClient.models.generateContent({
       model: process.env.GEMINI_MODEL,
       contents: textPrompt,
     });
 
-    // ✅ Handle both possible response shapes
     const rawText =
       response?.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
       response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!rawText) {
-      console.error("❌ Gemini did not return any text output:", JSON.stringify(response, null, 2));
-      return null;
+      console.error("Gemini returned no text:", JSON.stringify(response));
+      throw new Error("Empty response from Gemini");
     }
 
-    console.log("🧾 Raw Gemini Response (JSON expected):", rawText);
-
-    // --- Clean and Parse JSON ---
-    const cleaned = rawText
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    let result;
+    const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+    let parsed;
     try {
-      result = JSON.parse(cleaned);
-    } catch (err) {
-      console.error("⚠️ Failed to parse JSON from Gemini:", err.message);
-      console.error("Raw cleaned text:", cleaned);
-      return null;
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("Failed to parse JSON from Gemini:", parseErr.message);
+      console.error("Cleaned output:", cleaned.substring(0, 1000));
+      throw parseErr;
     }
 
-    // --- Validate Fields ---
-    if (!result.caption || !result.hashtags || !result.imagePrompt) {
-      console.error("❌ Missing required fields in Gemini response:", result);
-      return null;
+    if (!parsed.caption || !parsed.hashtags || !parsed.imagePrompt) {
+      console.error("Gemini response missing fields:", parsed);
+      throw new Error("Incomplete Gemini response");
     }
 
-    console.log("✅ Successfully generated structured content:", result);
-    return result;
-
-  } catch (error) {
-    console.error("❌ Error during Gemini content generation:", error);
-    return null;
+    return parsed;
+  } catch (err) {
+    throw err;
   }
 }
 
-// ===============================================
-// --- Hugging Face Configuration ---
-// ===============================================
-
-const HF_API_TOKEN = process.env.HF_API_TOKEN;
-const HF_IMAGE_URL = process.env.HF_IMAGE_URL;
-
-if (!HF_API_TOKEN) {
-  console.error("⚠️ Missing HF_API_TOKEN in .env file.");
-} else {
-  console.log("✅ Hugging Face configuration loaded.");
-}
-
-/**
- * Generates an image using Hugging Face Inference API.
- * @param {string} imagePrompt - The detailed prompt for image generation.
- * @returns {Promise<Buffer|null>} Image buffer or null.
- */
-async function generateImage(imagePrompt) {
+export async function generateImage(imagePrompt) {
   if (!process.env.HF_API_TOKEN) {
-    console.error("❌ Missing HF_API_TOKEN in .env file.");
-    return null;
+    console.error("Missing HF_API_TOKEN in .env");
+    throw new Error("Missing HF_API_TOKEN");
   }
   if (!imagePrompt) {
-    console.error("❌ Image prompt cannot be empty.");
-    return null;
+    throw new Error("imagePrompt is required");
   }
 
-  console.log(`🖼️ Sending image prompt to Hugging Face: "${imagePrompt.substring(0, 80)}..."`);
-
-  // Import dynamically (since @huggingface/inference is ESM-only)
   let InferenceClient;
   try {
     ({ InferenceClient } = await import("@huggingface/inference"));
   } catch (err) {
-    console.error("❌ Failed to import @huggingface/inference. Did you run `npm install @huggingface/inference`?", err);
-    return null;
+    console.error("Failed to import @huggingface/inference:", err);
+    throw err;
   }
 
-  // ✅ Correct property name: accessToken (NOT apiKey)
+  //Creating Image Generation model's client
   const client = new InferenceClient(process.env.HF_API_TOKEN);
 
   const maxAttempts = 3;
@@ -159,60 +121,32 @@ async function generateImage(imagePrompt) {
         model: process.env.IMAGE_GEN_MODEL,
         provider: "hf-inference",
         inputs: imagePrompt,
-        parameters: {
-          num_inference_steps: 25,
-          guidance_scale: 7.5,
-        },
+        parameters: { num_inference_steps: 70, guidance_scale: 10 },
         options: { wait_for_model: true },
       });
 
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      console.log(`✅ Hugging Face returned an image (attempt ${attempt}).`);
       return buffer;
-
     } catch (err) {
-      console.warn(`⚠️ Hugging Face image generation attempt ${attempt} failed: ${err.message}`);
+      console.warn(`HF attempt ${attempt} failed: ${err.message || err}`);
       if (attempt < maxAttempts) {
-        console.log(`⏳ Retrying in ${retryDelayMs / 1000}s...`);
-        await new Promise(r => setTimeout(r, retryDelayMs));
+        await sleep(retryDelayMs);
       } else {
-        console.error("❌ All attempts to generate image failed.");
-        return null;
+        throw err;
       }
     }
   }
-
+  // unreachable code
   return null;
 }
 
-
-/**
- * Lists available Gemini models.
- */
-async function listAvailableModels() {
-  if (!ai) {
-    console.error("❌ Gemini client not initialized.");
-    return null;
-  }
-  console.log("📜 Listing available Gemini models...");
-  try {
-    const result = await ai.models.list();
-    console.log("Raw model list:", result);
-    const models = result.models
-      ?.filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-      .map(m => m.name);
-    console.log("✅ Available models:", models);
-    return models;
-  } catch (error) {
-    console.error("❌ Error listing Gemini models:", error);
-    return null;
-  }
+export async function listAvailableModels() {
+  if (!aiClient) throw new Error("AI client not initialized");
+  const result = await aiClient.models.list();
+  const models =
+    result.models
+      ?.filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => m.name) || [];
+  return models;
 }
-
-// --- Exports ---
-module.exports = {
-  generatePostContent,
-  generateImage,
-  listAvailableModels
-};
