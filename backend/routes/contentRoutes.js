@@ -12,7 +12,7 @@ const { protect } = require('../middleware/authMiddleware');
  * NOTE: Logic preserved exactly — only formatting / small readability tweaks applied.
  */
 router.post('/generate-ad', protect, async (req, res, next) => {
-  const { userPrompt } = req.body;
+  const { userPrompt, businessDetails } = req.body;
 
   if (!userPrompt) {
     return res
@@ -25,7 +25,7 @@ router.post('/generate-ad', protect, async (req, res, next) => {
   try {
     // --- Step 1: Generate Text Content & Image Prompt (Gemini) ---
     console.log('Calling Gemini for text content...');
-    const textContent = await generatePostContent(userPrompt);
+    const textContent = await generatePostContent(userPrompt, businessDetails);
 
     if (!textContent || !textContent.imagePrompt || !textContent.caption) {
       console.error('Failed to get valid content structure from Gemini.');
