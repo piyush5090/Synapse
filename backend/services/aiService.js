@@ -86,7 +86,12 @@ Business details: ${JSON.stringify(businessDetails)}
       throw new Error("Incomplete Gemini response");
     }
 
-    return parsed;
+    return {
+      user_prompt: userPrompt, // Include original prompt for the caller
+      caption: parsed.caption,
+      hashtags: parsed.hashtags,
+      image_prompt: parsed.imagePrompt,
+    };
   } catch (err) {
     throw err;
   }
