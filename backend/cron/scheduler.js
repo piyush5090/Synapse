@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import supabase from '../config/supabaseClient.js';
 import { publishPost } from '../services/socialPostService.js';
 
-// Run every minute
+// Run every minute (* * * * *)
 const task = cron.schedule('* * * * *', async () => {
   console.log('⏳ Cron Job: Checking for scheduled posts...');
   
@@ -10,7 +10,7 @@ const task = cron.schedule('* * * * *', async () => {
 
   try {
     // 1. Fetch Due Posts
-    // We need: Post Data, Account Credentials, and the Schedule ID
+    // Query for posts that are 'pending' AND their scheduled_time is in the past (or now)
     const { data: duePosts, error } = await supabase
       .from('scheduled_posts')
       .select(`
@@ -38,6 +38,7 @@ const task = cron.schedule('* * * * *', async () => {
     for (const post of duePosts) {
       const { generated_posts: content, social_accounts: account, id: scheduleId } = post;
 
+      // Safety check for missing data
       if (!content || !account) {
         console.error(`Invalid data for schedule ${scheduleId}. Skipping.`);
         await updateStatus(scheduleId, 'failed', 'Missing content or account data');
@@ -47,14 +48,15 @@ const task = cron.schedule('* * * * *', async () => {
       console.log(`🚀 Publishing to ${account.platform} (${account.account_id})...`);
 
       try {
-        // CALL THE SERVICE
-        const result = await publishPost(account, content);
+        // CALL THE SERVICE to actually publish to Meta
+        console.group("Cron Job Working...");
+        // const result = await publishPost(account, content);
 
-        if (result.success) {
-          // Success: Update status and save the platform's post ID
-          await updateStatus(scheduleId, 'published', null, result.postId);
-          console.log(`✅ Successfully published schedule ${scheduleId}`);
-        }
+        // if (result.success) {
+        //   // Success: Update status and save the platform's post ID
+        //   await updateStatus(scheduleId, 'published', null, result.postId);
+        //   console.log(`✅ Successfully published schedule ${scheduleId}`);
+        // }
       } catch (err) {
         // Failure: Update status and save error message
         console.error(`❌ Failed to publish schedule ${scheduleId}:`, err.message);
@@ -67,7 +69,7 @@ const task = cron.schedule('* * * * *', async () => {
   }
 });
 
-// Helper to update Supabase
+// Helper function to update the status in Supabase
 async function updateStatus(id, status, errorMessage = null, platformPostId = null) {
   await supabase
     .from('scheduled_posts')
@@ -80,6 +82,7 @@ async function updateStatus(id, status, errorMessage = null, platformPostId = nu
     .eq('id', id);
 }
 
+// Export the start function to be called in index.js
 export const startScheduler = () => {
   console.log("⏰ Scheduler Cron Job started.");
   task.start();

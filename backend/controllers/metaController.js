@@ -60,7 +60,7 @@ export const connectMetaAccounts = async (req, res) => {
             // token_expires_at: Not directly available here, needs to be fetched if desired
             meta: page,
           },
-          { onConflict: "platform,account_id", ignoreDuplicates: false }
+          { onConflict: "business_id,platform" }
         )
         .select()
         .single();
@@ -105,7 +105,7 @@ export const connectMetaAccounts = async (req, res) => {
               // token_expires_at: Not directly available here
               meta: { instagram_business_account_id, instagram_username: ig_username },
             },
-            { onConflict: "platform,account_id", ignoreDuplicates: false }
+            { onConflict: "business_id,platform" }
           )
           .select()
           .single();
