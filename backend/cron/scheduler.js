@@ -1,8 +1,9 @@
 import cron from 'node-cron';
 import supabase from '../config/supabaseClient.js';
 import { publishPost } from '../services/socialPostService.js';
+import { createShortLink } from '../services/linkService.js'; // Import Link Service
 
-// Run every minute (* * * * *)
+// Run every minute
 const task = cron.schedule('* * * * *', async () => {
   console.log('⏳ Cron Job: Checking for scheduled posts...');
   
@@ -10,17 +11,22 @@ const task = cron.schedule('* * * * *', async () => {
 
   try {
     // 1. Fetch Due Posts
-    // Query for posts that are 'pending' AND their scheduled_time is in the past (or now)
+    // NOTE: Humne businesses se website_url fetch kiya hai aur user_id bhi
     const { data: duePosts, error } = await supabase
       .from('scheduled_posts')
       .select(`
         id,
         scheduled_time,
-        generated_posts ( caption, image_url ),
-        social_accounts ( platform, account_id, access_token )
+        generated_posts ( caption, image_url, user_id ),
+        social_accounts ( 
+          platform, 
+          account_id, 
+          access_token,
+          businesses ( website_url ) 
+        )
       `)
       .eq('status', 'pending')
-      .lte('scheduled_time', now); // Less than or Equal to NOW
+      .lte('scheduled_time', now);
 
     if (error) {
       console.error('Error fetching due posts:', error.message);
@@ -28,7 +34,6 @@ const task = cron.schedule('* * * * *', async () => {
     }
 
     if (!duePosts || duePosts.length === 0) {
-      // console.log('No posts due.');
       return;
     }
 
@@ -38,28 +43,53 @@ const task = cron.schedule('* * * * *', async () => {
     for (const post of duePosts) {
       const { generated_posts: content, social_accounts: account, id: scheduleId } = post;
 
-      // Safety check for missing data
       if (!content || !account) {
         console.error(`Invalid data for schedule ${scheduleId}. Skipping.`);
-        await updateStatus(scheduleId, 'failed', 'Missing content or account data');
+        await updateStatus(scheduleId, 'failed', 'Missing data');
         continue;
       }
 
-      console.log(`🚀 Publishing to ${account.platform} (${account.account_id})...`);
+      console.log(`🚀 Publishing to ${account.platform}...`);
 
       try {
-        // CALL THE SERVICE to actually publish to Meta
-        console.group("Cron Job Working...");
-        // const result = await publishPost(account, content);
+        // --- STEP A: Short Link Logic ---
+        let finalCaption = content.caption;
+        const websiteUrl = account.businesses?.website_url; // Business URL uthaya
+        const userId = content.user_id;
 
-        // if (result.success) {
-        //   // Success: Update status and save the platform's post ID
-        //   await updateStatus(scheduleId, 'published', null, result.postId);
-        //   console.log(`✅ Successfully published schedule ${scheduleId}`);
-        // }
+        if (websiteUrl) {
+            // 1. Short code generate kiya
+            const shortCode = await createShortLink(websiteUrl, scheduleId, userId);
+            
+            // 2. Full URL banaya (Domain environment variable se lena better hai)
+            const domain = process.env.BASE_URL || 'http://localhost:3001'; 
+            const shortUrl = `${domain}/r/${shortCode}`;
+
+            // 3. Caption mein jod diya
+            finalCaption = `${content.caption}\n\n🔗 ${shortUrl}`;
+            console.log(`   Attached Tracking Link: ${shortUrl}`);
+        } else {
+            console.log('   No website URL found for business, skipping link attachment.');
+        }
+
+        // --- STEP B: Publish ---
+        // Hum modified caption ke saath post kar rahe hain
+        const postData = { 
+            ...content, 
+            caption: finalCaption 
+        };
+        
+        // Asli function call kar rahe hain (Uncommented)
+        const result = await publishPost(account, postData);
+
+        if (result.success) {
+          // Success: Status update karo
+          await updateStatus(scheduleId, 'published', null, result.postId);
+          console.log(`✅ Success! Schedule ${scheduleId} published.`);
+        }
       } catch (err) {
-        // Failure: Update status and save error message
-        console.error(`❌ Failed to publish schedule ${scheduleId}:`, err.message);
+        // Failure: Error log karo
+        console.error(`❌ Failed schedule ${scheduleId}:`, err.message);
         await updateStatus(scheduleId, 'failed', err.message);
       }
     }
@@ -69,7 +99,7 @@ const task = cron.schedule('* * * * *', async () => {
   }
 });
 
-// Helper function to update the status in Supabase
+// Helper function to update status
 async function updateStatus(id, status, errorMessage = null, platformPostId = null) {
   await supabase
     .from('scheduled_posts')
@@ -82,8 +112,7 @@ async function updateStatus(id, status, errorMessage = null, platformPostId = nu
     .eq('id', id);
 }
 
-// Export the start function to be called in index.js
 export const startScheduler = () => {
-  console.log("⏰ Scheduler Cron Job started.");
+  console.log("⏰ Scheduler Cron Job started (Analytics Enabled).");
   task.start();
 };

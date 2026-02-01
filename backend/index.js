@@ -20,6 +20,7 @@ import contentRoutes from "./routes/contentRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import metaRoutes from "./routes/meta_routes.js";
 import schedulerRoutes from "./routes/schedulerRoutes.js";
+import redirectRoutes from "./routes/redirectRoutes.js";
 
 // Initialize the Express app
 const app = express();
@@ -51,6 +52,10 @@ app.use('/api/content', contentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/scheduler', schedulerRoutes); // Endpoint: /api/scheduler/create
+
+// --- Mount Redirect Router (NEW) ---
+// Note: Isse hum '/r' par mount karenge, '/api/r' par nahi, taaki link short dikhe.
+app.use('/r', redirectRoutes); // <--- 2. MOUNT KIYA
         
 // Simple Backend check route
 app.get('/', (req, res) => {
