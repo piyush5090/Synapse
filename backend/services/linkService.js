@@ -5,7 +5,7 @@ import supabase from '../config/supabaseClient.js';
  * 1. Short Link Create Karna
  * Original URL leta hai aur ek chota code return karta hai.
  */
-export const createShortLink = async (originalUrl, scheduledPostId, userId) => {
+export const createShortLink = async (originalUrl, scheduledPostId, userId, platform) => {
   // 8 character ka unique code (e.g., "xY1z2A3b")
   const shortCode = nanoid(8); 
   
@@ -15,7 +15,8 @@ export const createShortLink = async (originalUrl, scheduledPostId, userId) => {
       original_url: originalUrl,
       short_code: shortCode,
       scheduled_post_id: scheduledPostId,
-      user_id: userId
+      user_id: userId,
+      platform: platform,
     })
     .select()
     .single();
@@ -36,20 +37,15 @@ export const trackClick = async (shortCode, userAgent, referrer, ip) => {
   // A. Link Find karo
   const { data: link, error } = await supabase
     .from('tracked_links')
-    .select('id, original_url')
+    .select('id, original_url, platform')
     .eq('short_code', shortCode)
     .single();
 
   if (error || !link) return null; // Link nahi mila
 
   // B. Platform Guess karo (Referrer URL se)
-  let platform = 'Direct';
+  let platform = link.platform;
   const ref = referrer ? referrer.toLowerCase() : '';
-  
-  if (ref.includes('facebook') || ref.includes('fb.com')) platform = 'Facebook';
-  else if (ref.includes('instagram') || ref.includes('l.instagram')) platform = 'Instagram';
-  else if (ref.includes('twitter') || ref.includes('t.co')) platform = 'Twitter';
-  else if (ref.includes('linkedin') || ref.includes('lnkd.in')) platform = 'LinkedIn';
 
   // C. Async Log (User ko wait mat karao, background mein save karo)
   // Hum wait nahi kar rahe (no await) taaki redirect fast ho

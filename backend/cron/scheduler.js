@@ -56,10 +56,11 @@ const task = cron.schedule('* * * * *', async () => {
         let finalCaption = content.caption;
         const websiteUrl = account.businesses?.website_url; // Business URL uthaya
         const userId = content.user_id;
+        const platform = account.platform;
 
         if (websiteUrl) {
             // 1. Short code generate kiya
-            const shortCode = await createShortLink(websiteUrl, scheduleId, userId);
+            const shortCode = await createShortLink(websiteUrl, scheduleId, userId, platform);
             
             // 2. Full URL banaya (Domain environment variable se lena better hai)
             const domain = process.env.BASE_URL || 'http://localhost:3001'; 

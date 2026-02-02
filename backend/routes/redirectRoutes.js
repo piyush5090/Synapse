@@ -6,6 +6,7 @@ const router = express.Router();
 // GET /r/:code
 // Example: http://localhost:3001/api/r/AbC12345
 router.get('/:code', async (req, res) => {
+    console.log("Headers:", req.headers);
   const { code } = req.params;
   
   // Browser info capture karo
