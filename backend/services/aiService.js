@@ -8,10 +8,10 @@ import { GoogleGenAI } from "@google/genai";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let aiClient = null;
+let geminiClient = null;
 let initialized = false;
 
-export async function initAI() {
+export async function initGemini() {
   if (initialized) return;
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
@@ -21,7 +21,7 @@ export async function initAI() {
 
   try {
     console.log("Initializing Gemini client...");
-    aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    geminiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     initialized = true;
     console.log("✅ Gemini initialized");
   } catch (err) {
@@ -31,7 +31,7 @@ export async function initAI() {
 }
 
 export async function generatePostContent(userPrompt, businessDetails = {}) {
-  if (!aiClient) {
+  if (!geminiClient) {
     console.error("❌ Gemini client not initialized.");
     throw new Error("AI client not initialized");
   }
@@ -57,7 +57,7 @@ Business details: ${JSON.stringify(businessDetails)}
 `;
 
   try {
-    const response = await aiClient.models.generateContent({
+    const response = await geminiClient.models.generateContent({
       model: process.env.GEMINI_MODEL,
       contents: textPrompt,
     });
@@ -87,7 +87,7 @@ Business details: ${JSON.stringify(businessDetails)}
     }
 
     return {
-      user_prompt: userPrompt, // Include original prompt for the caller
+      user_prompt: userPrompt, // Include original prompt also
       caption: parsed.caption,
       hashtags: parsed.hashtags,
       image_prompt: parsed.imagePrompt,
@@ -147,8 +147,8 @@ export async function generateImage(imagePrompt) {
 }
 
 export async function listAvailableModels() {
-  if (!aiClient) throw new Error("AI client not initialized");
-  const result = await aiClient.models.list();
+  if (!geminiClient) throw new Error("AI client not initialized");
+  const result = await geminiClient.models.list();
   const models =
     result.models
       ?.filter((m) => m.supportedGenerationMethods?.includes("generateContent"))

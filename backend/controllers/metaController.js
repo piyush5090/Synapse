@@ -1,6 +1,8 @@
 import axios from "axios";
 import supabase from "../config/supabaseClient.js";
 
+
+// Connet Meta Accounts Controller
 export const connectMetaAccounts = async (req, res) => {
   try {
     const { business_id, system_token } = req.body;
@@ -41,7 +43,6 @@ export const connectMetaAccounts = async (req, res) => {
 
       if (insertMetaError) {
         console.error("Error inserting into meta_accounts:", insertMetaError);
-        // Continue to the next page, or handle as a fatal error for the current page
         continue;
       }
 
@@ -57,7 +58,6 @@ export const connectMetaAccounts = async (req, res) => {
             account_name: page_name,
             account_id: page_id,
             access_token: page_token,
-            // token_expires_at: Not directly available here, needs to be fetched if desired
             meta: page,
           },
           { onConflict: "business_id,platform" }
@@ -101,8 +101,7 @@ export const connectMetaAccounts = async (req, res) => {
               platform: "instagram",
               account_name: ig_username,
               account_id: instagram_business_account_id,
-              access_token: page_token, // Often shares page access token
-              // token_expires_at: Not directly available here
+              access_token: page_token, 
               meta: { instagram_business_account_id, instagram_username: ig_username },
             },
             { onConflict: "business_id,platform" }
@@ -140,6 +139,62 @@ export const connectMetaAccounts = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+// Controller Get already saved Meta Accounts where business_id matches 
+export const getMetaAccounts = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+
+    const { data, error } = await supabase
+      .from("meta_accounts")
+      .select("*")
+      .eq("business_id", businessId);
+
+    if (error) {
+      console.error("Error fetching meta accounts:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({
+      accounts: data || [],
+    });
+  } catch (err) {
+    console.error("Error in getMetaAccounts:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+// Controller to Delete the already save Meta Accounts where business_id matches
+export const deleteMetaAccounts = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+
+    // Delete from social_accounts
+    const { error: socialError } = await supabase
+      .from("social_accounts")
+      .delete()
+      .eq("business_id", businessId);
+
+    if (socialError) throw socialError;
+
+    // Delete from meta_accounts
+    const { error: metaError } = await supabase
+      .from("meta_accounts")
+      .delete()
+      .eq("business_id", businessId);
+
+    if (metaError) throw metaError;
+
+    return res.json({
+      message: "Meta accounts disconnected successfully",
+    });
+  } catch (err) {
+    console.error("Error in deleteMetaAccounts:", err);
     return res.status(500).json({ error: err.message });
   }
 };

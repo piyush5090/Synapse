@@ -7,7 +7,7 @@ import express from "express";
 import cors from "cors";
 
 // Services (executed on import)
-import { initAI } from "./services/aiService.js";
+import { initGemini } from "./services/aiService.js";
 import { initCloudinary } from "./services/cloudinaryService.js";
 import { startScheduler } from "./cron/scheduler.js"; // Import scheduler starter
 
@@ -28,7 +28,7 @@ const app = express();
 async function startServer() {
   try {
     // initialize services before starting the server
-    await initAI();
+    await initGemini();
     initCloudinary();
     console.log("All services initialized.");
     
