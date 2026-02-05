@@ -63,7 +63,7 @@ const task = cron.schedule('* * * * *', async () => {
             const shortCode = await createShortLink(websiteUrl, scheduleId, userId, platform);
             
             // 2. Full URL banaya (Domain environment variable se lena better hai)
-            const domain = process.env.BASE_URL || 'http://localhost:5174'; 
+            const domain = process.env.BASE_URL || 'https://synapse-backend-uuoe.onrender.com'; 
             const shortUrl = `${domain}/r/${shortCode}`;
 
             // 3. Caption mein jod diya

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { store } from '../app/store';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  baseURL: 'https://synapse-backend-uuoe.onrender.com/api',
 });
 
 api.interceptors.request.use((config) => {
