@@ -1,93 +1,116 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Calendar, Filter, Download } from 'lucide-react';
+import { BarChart3, Filter, Loader2, ArrowRight } from 'lucide-react';
 import PlatformChart from '../components/analytics/PlatformChart';
 import TopPostsTable from '../components/analytics/TopPostsTable';
-import api from '../services/api'; // Assuming you have an endpoint, or we use mock data below
+import api from '../services/api'; 
 
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState('7'); // '7', '10', 'all'
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState([]);
+  
+  // Raw Data from API
+  const [rawPlatformData, setRawPlatformData] = useState({});
   const [topPosts, setTopPosts] = useState([]);
+
+  // Processed Data for UI
+  const [chartData, setChartData] = useState([]);
   const [totals, setTotals] = useState({ facebook: 0, instagram: 0, total: 0 });
 
-  // --- DATA PROCESSING LOGIC ---
-  const processAnalytics = (events) => {
-    // 1. Filter by Date
+  // --- 1. FETCH DATA (ON LOAD) ---
+  useEffect(() => {
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // Parallel Fetch
+            const [perfRes, topRes] = await Promise.all([
+                api.get('/analytics/platform-performance'),
+                api.get('/analytics/top-posts?limit=10')
+            ]);
+
+            if (perfRes.data.status === 'Success') {
+                setRawPlatformData(perfRes.data.data);
+            }
+            
+            if (topRes.data.status === 'Success') {
+                // Map backend 'clicks' to component 'count'
+                const formattedPosts = topRes.data.data.map(post => ({
+                    ...post,
+                    count: post.clicks,
+                    platform: 'Multi' // Since backend aggregates by link_id, it's multi-platform
+                }));
+                setTopPosts(formattedPosts);
+            }
+
+        } catch (err) {
+            console.error("Failed to load analytics", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchData();
+  }, []);
+
+  // --- 2. PROCESS DATA (ON FILTER CHANGE) ---
+  useEffect(() => {
+    if (Object.keys(rawPlatformData).length === 0) return;
+
+    // A. Helper to get date list
+    const getAllDates = () => {
+        const dates = new Set();
+        Object.values(rawPlatformData).forEach(dateMap => {
+            Object.keys(dateMap).forEach(date => dates.add(date));
+        });
+        return Array.from(dates).sort();
+    };
+
+    // B. Date Filtering Logic
+    const allDates = getAllDates();
     const now = new Date();
     const cutoff = new Date();
     if (timeRange !== 'all') {
         cutoff.setDate(now.getDate() - parseInt(timeRange));
     }
 
-    const filtered = timeRange === 'all' 
-        ? events 
-        : events.filter(e => new Date(e.created_at) >= cutoff);
+    // Filter dates based on range
+    const filteredDates = timeRange === 'all' 
+        ? allDates 
+        : allDates.filter(dateStr => new Date(dateStr) >= cutoff);
 
-    // 2. Aggregate for Chart (Group by Date)
-    const groupedByDate = filtered.reduce((acc, curr) => {
-        const date = new Date(curr.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        if (!acc[date]) acc[date] = { date, facebook: 0, instagram: 0 };
+    // C. Build Chart Data Array
+    let fbTotal = 0;
+    let igTotal = 0;
+
+    const processedChart = filteredDates.map(dateStr => {
+        const fbCount = rawPlatformData['facebook']?.[dateStr] || 0;
+        const igCount = rawPlatformData['instagram']?.[dateStr] || 0;
         
-        if (curr.platform === 'facebook') acc[date].facebook += 1;
-        if (curr.platform === 'instagram') acc[date].instagram += 1;
-        
-        return acc;
-    }, {});
+        fbTotal += fbCount;
+        igTotal += igCount;
 
-    // Convert to Array & Sort chronologically
-    const chartArray = Object.values(groupedByDate).sort((a, b) => new Date(a.date) - new Date(b.date));
+        return {
+            date: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            facebook: fbCount,
+            instagram: igCount
+        };
+    });
 
-    // 3. Aggregate for Top Posts
-    const groupedByLink = filtered.reduce((acc, curr) => {
-        if (!acc[curr.link_id]) {
-            acc[curr.link_id] = { link_id: curr.link_id, count: 0, platform: curr.platform }; // Add caption if available in join
-        }
-        acc[curr.link_id].count += 1;
-        return acc;
-    }, {});
+    setChartData(processedChart);
+    setTotals({
+        facebook: fbTotal,
+        instagram: igTotal,
+        total: fbTotal + igTotal
+    });
 
-    const topPostsArray = Object.values(groupedByLink).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [timeRange, rawPlatformData]);
 
-    // 4. Totals
-    const totalFb = filtered.filter(e => e.platform === 'facebook').length;
-    const totalIg = filtered.filter(e => e.platform === 'instagram').length;
-
-    setChartData(chartArray);
-    setTopPosts(topPostsArray);
-    setTotals({ facebook: totalFb, instagram: totalIg, total: filtered.length });
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            // Replace with actual API call: await api.get('/analytics');
-            // Using your provided JSON structure for simulation:
-            const mockResponse = [
-                { "id": 20, "created_at": "2026-02-05 11:28:03", "link_id": "54b3...", "platform": "facebook" },
-                { "id": 21, "created_at": "2026-02-05 11:28:03", "link_id": "54b3...", "platform": "facebook" },
-                { "id": 27, "created_at": "2026-02-05 11:41:21", "link_id": "54b3...", "platform": "facebook" },
-                { "id": 31, "created_at": "2026-02-05 11:43:07", "link_id": "b337...", "platform": "instagram" },
-                { "id": 32, "created_at": "2026-02-05 11:43:07", "link_id": "b337...", "platform": "instagram" },
-                { "id": 35, "created_at": "2026-02-04 10:00:00", "link_id": "b337...", "platform": "instagram" }, // Old date test
-                // ... add more from your data
-            ];
-            
-            // Simulating API latency
-            setTimeout(() => {
-                processAnalytics(mockResponse); // Pass the raw array here
-                setLoading(false);
-            }, 500);
-
-        } catch (err) {
-            console.error("Failed to load analytics", err);
-            setLoading(false);
-        }
-    };
-
-    fetchData();
-  }, [timeRange]);
+  if (loading) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-[#F8F9FC]">
+            <Loader2 className="animate-spin text-slate-400" size={32} />
+        </div>
+      );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#F8F9FC] text-slate-900 font-sans">
@@ -145,12 +168,12 @@ const AnalyticsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
             
             {/* Left: Chart (2/3 width) */}
-            <div className="lg:col-span-2 h-full">
+            <div className="lg:col-span-2 h-full min-h-[350px]">
                 <PlatformChart data={chartData} />
             </div>
 
             {/* Right: Top Posts (1/3 width) */}
-            <div className="lg:col-span-1 h-full">
+            <div className="lg:col-span-1 h-full min-h-[350px]">
                 <TopPostsTable posts={topPosts} />
             </div>
 
