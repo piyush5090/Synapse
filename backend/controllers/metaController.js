@@ -7,7 +7,7 @@ export const connectMetaAccounts = async (req, res) => {
   try {
     const { business_id, system_token } = req.body;
 
-    // Fetch all Facebook pages
+    // Fetch all Facebook pages 
     const fbPagesResp = await axios.get(
       `https://graph.facebook.com/v21.0/me/accounts?access_token=${system_token}`
     );
@@ -149,13 +149,14 @@ export const getMetaAccounts = async (req, res) => {
   try {
     const { businessId } = req.params;
 
+    // Fetch directly from 'social_accounts' so we get "platform", "account_name"
     const { data, error } = await supabase
-      .from("meta_accounts")
+      .from("social_accounts") 
       .select("*")
       .eq("business_id", businessId);
 
     if (error) {
-      console.error("Error fetching meta accounts:", error);
+      console.error("Error fetching social accounts:", error);
       return res.status(500).json({ error: error.message });
     }
 

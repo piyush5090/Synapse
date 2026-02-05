@@ -17,7 +17,7 @@ const {
 // Ad Generation route using AI
 router.post("/generate-ad", protect, generateAd);
 
-// Create new post entry route
+// Save new post entry route
 router.post("/", protect, createPost);
 
 // Create new post entry without AI (manual upload)

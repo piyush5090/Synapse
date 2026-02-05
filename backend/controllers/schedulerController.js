@@ -115,24 +115,48 @@ exports.getScheduledPosts = async (req, res, next) => {
   const to = from + limit - 1;
 
   try {
+    // 1. First, fetch the IDs of generated posts belonging to this user
+    const { data: userPosts, error: userPostsError } = await supabase
+      .from("generated_posts")
+      .select("id")
+      .eq("user_id", userId);
+
+    if (userPostsError) throw userPostsError;
+
+    // Extract just the IDs into a simple array: ['uuid-1', 'uuid-2']
+    const postIds = userPosts.map((post) => post.id);
+
+    // If user has no posts, return empty array immediately to avoid query error
+    if (postIds.length === 0) {
+        return res.json({
+            status: "Success",
+            data: [],
+            pagination: { page, limit, total: 0, hasMore: false },
+        });
+    }
+
+    // 2. Now use that array in the .in() filter
     const { data, error, count } = await supabase
       .from("scheduled_posts")
-      .select("*",{ count: "exact" })
-      .in(
-        "generated_post_id",
-        supabase
-          .from("generated_posts")
-          .select("id")
-          .eq("user_id", userId)
-      )
+      .select("*, generated_posts(image_url, caption)", { count: "exact" }) // Optional: join to get image/caption
+      .in("generated_post_id", postIds) // <--- Now passing a real Array
       .order("scheduled_time", { ascending: true })
       .range(from, to);
 
     if (error) throw error;
 
+    // Transform data if you joined generated_posts (Optional UI enhancement)
+    // This helps your frontend show the image even if it's looking for 'image_url' on the top level
+    const formattedData = data.map(schedule => ({
+        ...schedule,
+        // Flatten joined data for easier frontend use
+        image_url: schedule.generated_posts?.image_url, 
+        caption: schedule.generated_posts?.caption
+    }));
+
     return res.json({
       status: "Success",
-      data,
+      data: formattedData,
       pagination: {
         page,
         limit,
@@ -207,36 +231,44 @@ exports.updateScheduleTime = async (req, res, next) => {
 
 /**
  * DELETE /api/scheduler/:id
- * Delete schedule
+ * Delete a single schedule
  */
 exports.deleteSchedule = async (req, res, next) => {
-  const { id } = req.params;
+  const { id } = req.params; // The ID of the schedule to delete
   const userId = req.user.id;
 
   try {
-    const { error } = await supabase
+    // 1. Fetch the specific schedule and its parent post to verify ownership
+    const { data: schedule, error: fetchError } = await supabase
+      .from("scheduled_posts")
+      .select("id, generated_posts(user_id)")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !schedule) {
+      return res.status(404).json({ status: "Error", message: "Schedule not found." });
+    }
+
+    // 2. Check if the logged-in user owns the generated post associated with this schedule
+    const ownerId = schedule.generated_posts?.user_id;
+
+    if (ownerId !== userId) {
+      return res.status(403).json({ status: "Error", message: "Unauthorized: You do not own this schedule." });
+    }
+
+    // 3. Delete the ONE specific record
+    const { error: deleteError } = await supabase
       .from("scheduled_posts")
       .delete()
-      .eq("id", id)
-      .in(
-        "generated_post_id",
-        supabase
-          .from("generated_posts")
-          .select("id")
-          .eq("user_id", userId)
-      );
+      .eq("id", id);
 
-    if (error) {
-      return res.status(403).json({
-        status: "Error",
-        message: "Unauthorized or schedule not found.",
-      });
-    }
+    if (deleteError) throw deleteError;
 
     return res.json({
       status: "Success",
       message: "Schedule deleted successfully.",
     });
+
   } catch (error) {
     console.error("Delete schedule error:", error.message);
     return next(error);

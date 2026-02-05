@@ -1,51 +1,65 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getScheduledPosts, createSchedule } from './postsApiService';
-
-const initialState = {
-  scheduledPosts: [],
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
-};
-
-export const fetchScheduledPosts = createAsyncThunk('posts/fetchScheduledPosts', async () => {
-  const data = await getScheduledPosts();
-  return data;
-});
-
-export const scheduleNewPost = createAsyncThunk('posts/scheduleNewPost', async (scheduleData, { dispatch }) => {
-  const data = await createSchedule(scheduleData);
-  dispatch(fetchScheduledPosts());
-  return data;
-});
-
+import { createSlice } from '@reduxjs/toolkit';
 
 const scheduledPostsSlice = createSlice({
   name: 'scheduledPosts',
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchScheduledPosts.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchScheduledPosts.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.scheduledPosts = action.payload;
-      })
-      .addCase(fetchScheduledPosts.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(scheduleNewPost.pending, (state) => {
-        // Optionally handle scheduling status
-      })
-      .addCase(scheduleNewPost.fulfilled, (state, action) => {
-        // Optionally handle scheduled status
-      })
-      .addCase(scheduleNewPost.rejected, (state, action) => {
-        // Optionally handle schedule error
-      });
+  initialState: {
+    schedules: [],
+    pagination: { page: 1, limit: 5, total: 0, hasMore: false },
+    status: 'idle',
+  },
+  reducers: {
+    // 1. Bulk Set (Initial Fetch / Refresh)
+    setScheduledPosts: (state, action) => {
+      state.schedules = action.payload.data;
+      if (action.payload.pagination) {
+        state.pagination = action.payload.pagination;
+      }
+      state.status = 'success';
+    },
+
+    // 2. Append (Load More) - NEW REDUCER
+    appendScheduledPosts: (state, action) => {
+      // Filter out duplicates based on ID to be safe
+      const newSchedules = action.payload.data.filter(
+        newSch => !state.schedules.some(existing => existing.id === newSch.id)
+      );
+      
+      // Add to the end of the list
+      state.schedules = [...state.schedules, ...newSchedules];
+      
+      // Optional: Keep them sorted by time if your UI relies on strict order
+      // state.schedules.sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+
+      // Update pagination info (current page, hasMore)
+      if (action.payload.pagination) {
+        state.pagination = action.payload.pagination;
+      }
+      state.status = 'success';
+    },
+
+    // 3. Add One (Create)
+    addScheduledPost: (state, action) => {
+      state.schedules.push(action.payload);
+      state.schedules.sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+    },
+
+    // 4. Remove One (Delete)
+    removeScheduledPost: (state, action) => {
+      state.schedules = state.schedules.filter((sch) => sch.id !== action.payload);
+    },
+
+    setSchedulesLoading: (state) => {
+      state.status = 'loading';
+    }
   },
 });
+
+export const { 
+  setScheduledPosts, 
+  appendScheduledPosts, // <--- Export this
+  addScheduledPost, 
+  removeScheduledPost, 
+  setSchedulesLoading 
+} = scheduledPostsSlice.actions;
 
 export default scheduledPostsSlice.reducer;

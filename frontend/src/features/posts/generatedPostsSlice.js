@@ -1,69 +1,42 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getGeneratedPosts, generateAd, saveGeneratedPost } from './postsApiService';
-
-const initialState = {
-  posts: [],
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
-  generationStatus: 'idle',
-  generationError: null,
-};
-
-export const fetchGeneratedPosts = createAsyncThunk('posts/fetchGeneratedPosts', async () => {
-  const data = await getGeneratedPosts();
-  return data;
-});
-
-export const generateNewAd = createAsyncThunk('posts/generateNewAd', async (promptData) => {
-  const data = await generateAd(promptData);
-  return data.data;
-});
-
-export const savePost = createAsyncThunk('posts/savePost', async (postData, { dispatch }) => {
-  const data = await saveGeneratedPost(postData);
-  dispatch(fetchGeneratedPosts());
-  return data.data;
-});
-
+import { createSlice } from '@reduxjs/toolkit';
 
 const generatedPostsSlice = createSlice({
   name: 'generatedPosts',
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchGeneratedPosts.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchGeneratedPosts.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.posts = action.payload;
-      })
-      .addCase(fetchGeneratedPosts.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(generateNewAd.pending, (state) => {
-        state.generationStatus = 'loading';
-      })
-      .addCase(generateNewAd.fulfilled, (state, action) => {
-        state.generationStatus = 'succeeded';
-        state.posts.unshift(action.payload);
-      })
-      .addCase(generateNewAd.rejected, (state, action) => {
-        state.generationStatus = 'failed';
-        state.generationError = action.error.message;
-      })
-      .addCase(savePost.pending, (state) => {
-        // Optionally handle saving status
-      })
-      .addCase(savePost.fulfilled, (state, action) => {
-        // Optionally handle saved status
-      })
-      .addCase(savePost.rejected, (state, action) => {
-        // Optionally handle save error
-      });
+  initialState: {
+    posts: [],
+    pagination: { page: 1, limit: 20, total: 0, hasMore: false },
+    status: 'idle',
+  },
+  reducers: {
+    setGeneratedPosts: (state, action) => {
+      state.posts = action.payload.data;
+      state.pagination = action.payload.pagination;
+      state.status = 'success';
+    },
+    // --- NEW REDUCER FOR LOAD MORE ---
+    appendGeneratedPosts: (state, action) => {
+      // 1. Add new posts to the end
+      // (Optional: Filter duplicates to be safe)
+      const newPosts = action.payload.data.filter(
+        newPost => !state.posts.some(existing => existing.id === newPost.id)
+      );
+      state.posts = [...state.posts, ...newPosts];
+      
+      // 2. Update pagination info (current page, hasMore, etc)
+      state.pagination = action.payload.pagination;
+    },
+    // ---------------------------------
+    addGeneratedPost: (state, action) => {
+      state.posts.unshift(action.payload);
+    },
+    removeGeneratedPost: (state, action) => {
+      state.posts = state.posts.filter((post) => post.id !== action.payload);
+    },
+    setPostsLoading: (state) => {
+      state.status = 'loading';
+    }
   },
 });
 
+export const { setGeneratedPosts, appendGeneratedPosts, addGeneratedPost, removeGeneratedPost, setPostsLoading } = generatedPostsSlice.actions;
 export default generatedPostsSlice.reducer;

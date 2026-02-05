@@ -1,101 +1,56 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { login, signup, getBusiness, createOrUpdateBusiness } from './userApiService';
+import { createSlice } from '@reduxjs/toolkit';
+
+// 1. READ FROM STORAGE (Load saved email if it exists)
+const token = localStorage.getItem('token');
+const storedEmail = localStorage.getItem('email'); // <--- ADD THIS
 
 const initialState = {
-  user: null,
-  business: null,
-  token: localStorage.getItem('token') || null,
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
+  token: token || null,
+  isAuthenticated: !!token,
+  email: storedEmail || null, // <--- UPDATE THIS (Use storedEmail instead of null)
+  business: null,        
+  social_accounts: [],   
 };
-
-export const loginUser = createAsyncThunk('user/loginUser', async (credentials, { dispatch }) => {
-  const data = await login(credentials);
-  localStorage.setItem('token', data.token);
-  dispatch(fetchBusiness());
-  return data;
-});
-
-export const signupUser = createAsyncThunk('user/signupUser', async (credentials) => {
-  const data = await signup(credentials);
-  return data;
-});
-
-export const fetchBusiness = createAsyncThunk('user/fetchBusiness', async () => {
-  const data = await getBusiness();
-  return data.business;
-});
-
-export const saveBusiness = createAsyncThunk('user/saveBusiness', async (businessData) => {
-  const data = await createOrUpdateBusiness(businessData);
-  return data.business;
-});
-
 
 const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    logout: (state) => {
-      state.user = null;
-      state.business = null;
-      state.token = null;
-      localStorage.removeItem('token');
+    loginSuccess: (state, action) => {
+      const { email, token, business, social_accounts } = action.payload;
+      
+      state.token = token;
+      state.email = email;
+      state.isAuthenticated = true;
+      state.business = business || null;
+      state.social_accounts = social_accounts || [];
+
+      // 2. WRITE TO STORAGE (Save email on login)
+      localStorage.setItem('token', token);
+      localStorage.setItem('email', email); // <--- ADD THIS
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(loginUser.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.error = null;
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(signupUser.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(signupUser.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.error = null;
-      })
-      .addCase(signupUser.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(fetchBusiness.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchBusiness.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.business = action.payload;
-        state.error = null;
-      })
-      .addCase(fetchBusiness.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(saveBusiness.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(saveBusiness.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.business = action.payload;
-        state.error = null;
-      })
-      .addCase(saveBusiness.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      });
+
+    setBusiness: (state, action) => {
+      state.business = action.payload;
+    },
+
+    setSocialAccounts: (state, action) => {
+      state.social_accounts = action.payload;
+    },
+
+    logout: (state) => {
+      state.token = null;
+      state.isAuthenticated = false;
+      state.email = null;
+      state.business = null;
+      state.social_accounts = [];
+      
+      // 3. CLEAR FROM STORAGE (Remove email on logout)
+      localStorage.removeItem('token');
+      localStorage.removeItem('email'); // <--- ADD THIS
+    },
   },
 });
 
-export const { logout } = userSlice.actions;
-
+export const { loginSuccess, setBusiness, setSocialAccounts, logout } = userSlice.actions;
 export default userSlice.reducer;

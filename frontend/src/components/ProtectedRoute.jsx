@@ -5,7 +5,7 @@ const ProtectedRoute = () => {
   const { token } = useSelector((state) => state.user);
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

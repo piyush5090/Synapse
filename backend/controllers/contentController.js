@@ -4,10 +4,11 @@ const { uploadImage } = require("../services/cloudinaryService");
 
 /**
  * POST /api/content/generate-ad
- * Generate AI caption + hashtags + image
+ * Generate AI caption + hashtags
+ * Optionally generate image based on frontend flag
  */
 exports.generateAd = async (req, res, next) => {
-  const { userPrompt, businessDetails } = req.body;
+  const { userPrompt, businessDetails, generateImage : genImg } = req.body;
 
   if (!userPrompt) {
     return res
@@ -16,28 +17,37 @@ exports.generateAd = async (req, res, next) => {
   }
 
   try {
-    // 1. Generate text content
+    // 1. Generate text content (ALWAYS)
     const textContent = await generatePostContent(
       userPrompt,
       businessDetails
     );
 
-    if (
-      !textContent ||
-      !textContent.image_prompt ||
-      !textContent.caption
-    ) {
-      throw new Error("AI failed to generate required content.");
+    if (!textContent || !textContent.caption) {
+      throw new Error("AI failed to generate caption.");
     }
 
-    // 2. Generate image
-    const imageBuffer = await generateImage(textContent.image_prompt);
-    if (!imageBuffer) throw new Error("Image generation failed.");
+    let imageUrl = null;
 
-    // 3. Upload image
-    const imageUrl = await uploadImage(imageBuffer);
-    if (!imageUrl) throw new Error("Image upload failed.");
+    // 2. Generate image ONLY if frontend asks for it
+    if (genImg === true) {
+      try {
+        const imageBuffer = await generateImage(
+          textContent.image_prompt
+        );
 
+        if (imageBuffer) {
+          imageUrl = await uploadImage(imageBuffer);
+        }
+      } catch (imgErr) {
+        console.warn(
+          "⚠️ Image generation skipped:",
+          imgErr.message
+        );
+      }
+    }
+
+    // 3. Return response
     return res.status(200).json({
       status: "Success",
       data: {
@@ -45,7 +55,8 @@ exports.generateAd = async (req, res, next) => {
         caption: textContent.caption,
         hashtags: textContent.hashtags,
         image_prompt: textContent.image_prompt,
-        image_url: imageUrl,
+        image_url: imageUrl, // null if not generated
+        image_generated: Boolean(imageUrl),
       },
     });
   } catch (error) {
@@ -53,6 +64,7 @@ exports.generateAd = async (req, res, next) => {
     return next(error);
   }
 };
+
 
 /**
  * POST /api/content
