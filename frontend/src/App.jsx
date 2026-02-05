@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/content" element={<ContentPage />} />
             <Route path="/schedule" element={<PostScheduler />} /> {/* <--- ADDED THIS */}
+            <Route path="/analytics" element={<AnalyticsPage />} />
           </Route>
 
         </Route>
