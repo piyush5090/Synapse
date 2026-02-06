@@ -19,7 +19,6 @@ export const postToFacebook = async (pageId, accessToken, message, imageUrl) => 
     return { success: true, postId: response.data.id, platform: 'facebook' };
   } catch (error) {
     console.error("❌ Facebook Posting Error:", error.response?.data || error.message);
-    // Return a structured error to save in the database logs later
     throw new Error(error.response?.data?.error?.message || "Failed to post to Facebook");
   }
 };
@@ -27,12 +26,13 @@ export const postToFacebook = async (pageId, accessToken, message, imageUrl) => 
 /**
  * Publishes content to an Instagram Business Account.
  * Process: 
- * 1. Create Media Container (uploaded image + caption)
- * 2. Publish the Container
+ * 1. Create Media Container
+ * 2. WAIT for Container Status = FINISHED (Crucial Step!)
+ * 3. Publish the Container
  */
 export const postToInstagram = async (igUserId, accessToken, caption, imageUrl) => {
   try {
-    // Step 1: Create Media Container
+    // --- Step 1: Create Media Container ---
     const containerUrl = `https://graph.facebook.com/v21.0/${igUserId}/media`;
     const containerResponse = await axios.post(containerUrl, {
       image_url: imageUrl,
@@ -45,7 +45,44 @@ export const postToInstagram = async (igUserId, accessToken, caption, imageUrl) 
         throw new Error("Failed to create Instagram media container.");
     }
 
-    // Step 2: Publish Media
+    console.log(`[IG] Container created (${creationId}). Waiting for processing...`);
+
+    // --- Step 2: The Fix - POLL for Status ---
+    let isReady = false;
+    let attempt = 0;
+    const maxRetries = 10; // Try for 30 seconds (10 * 3s)
+
+    while (!isReady && attempt < maxRetries) {
+      attempt++;
+      
+      // Wait 3 seconds before checking status
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const statusUrl = `https://graph.facebook.com/v21.0/${creationId}`;
+      const statusRes = await axios.get(statusUrl, {
+        params: {
+          fields: 'status_code,status', // Ask for specific fields
+          access_token: accessToken
+        }
+      });
+
+      const statusCode = statusRes.data.status_code; // 'FINISHED', 'IN_PROGRESS', or 'ERROR'
+      console.log(`[IG] Attempt ${attempt}/${maxRetries} - Status: ${statusCode}`);
+
+      if (statusCode === 'FINISHED') {
+        isReady = true;
+      } else if (statusCode === 'ERROR') {
+        throw new Error(`Instagram Processing Failed: ${JSON.stringify(statusRes.data)}`);
+      }
+      // If 'IN_PROGRESS', the loop continues automatically
+    }
+
+    if (!isReady) {
+      throw new Error("Instagram processing timed out. Image might be too large or format unsupported.");
+    }
+
+    // --- Step 3: Publish Media ---
+    console.log(`[IG] Processing complete. Publishing now...`);
     const publishUrl = `https://graph.facebook.com/v21.0/${igUserId}/media_publish`;
     const publishResponse = await axios.post(publishUrl, {
       creation_id: creationId,
@@ -54,16 +91,16 @@ export const postToInstagram = async (igUserId, accessToken, caption, imageUrl) 
 
     console.log(`✅ Posted to Instagram ${igUserId}: ${publishResponse.data.id}`);
     return { success: true, postId: publishResponse.data.id, platform: 'instagram' };
+
   } catch (error) {
     console.error("❌ Instagram Posting Error:", error.response?.data || error.message);
-    throw new Error(error.response?.data?.error?.message || "Failed to post to Instagram");
+    const apiMsg = error.response?.data?.error?.message;
+    throw new Error(apiMsg || error.message || "Failed to post to Instagram");
   }
 };
 
 /**
- * Universal Router: Automatically detects platform and sends the post.
- * * @param {object} socialAccount - From 'social_accounts' table: { platform, account_id, access_token }
- * @param {object} postData - From 'generated_posts' table: { caption, image_url }
+ * Universal Router
  */
 export const publishPost = async (socialAccount, postData) => {
     const { platform, account_id, access_token } = socialAccount;
