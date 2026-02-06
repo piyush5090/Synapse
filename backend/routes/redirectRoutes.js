@@ -3,26 +3,18 @@ import { trackClick } from '../services/linkService.js';
 
 const router = express.Router();
 
-// GET /r/:code
-// Example: http://localhost:3001/api/r/AbC12345
 router.get('/:code', async (req, res) => {
   const { code } = req.params;
+  const userAgent = req.headers['user-agent'] || ''; // Get the User-Agent
 
   try {
-    // We no longer need to pass IP/UserAgent/Referrer
-    const targetUrl = await trackClick(code);
+    // Pass userAgent to the service
+    const targetUrl = await trackClick(code, userAgent);
 
     if (targetUrl) {
-      // 302 Temporary Redirect ensures the browser requests the server every time
-      // (crucial for accurate click counting)
       return res.redirect(302, targetUrl); 
     } else {
-      return res.status(404).send(`
-        <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-            <h1>Link Not Found</h1>
-            <p>The link you are trying to access does not exist or has expired.</p>
-        </div>
-      `);
+      return res.status(404).send('Link not found');
     }
   } catch (err) {
     console.error("Redirect Fatal Error:", err);
