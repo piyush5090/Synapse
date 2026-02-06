@@ -105,6 +105,11 @@ function App() {
             <Route path="/content" element={<ContentPage />} />
             <Route path="/schedule" element={<PostScheduler />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+          <Route path="/legal" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/docs" element={<DocumentationPage />} />
+          <Route path="/docs/system-token" element={<SystemTokenGuide />} />
           </Route>
 
         </Route>
