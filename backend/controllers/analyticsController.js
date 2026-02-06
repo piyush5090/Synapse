@@ -85,7 +85,9 @@ exports.getTopPerformingPosts = async (req, res, next) => {
                 short_code: link.short_code,
                 platform: link.scheduled_posts?.social_accounts?.platform || 'Unknown',
                 caption: link.scheduled_posts?.generated_posts?.caption,
-                image_url: link.scheduled_posts?.generated_posts?.image_url
+                image_url: link.scheduled_posts?.generated_posts?.image_url,
+                published_at: link.scheduled_posts?.posted_at,
+                created_at: link.created_at,
             };
         }
         clickMap[linkId].clicks++;
