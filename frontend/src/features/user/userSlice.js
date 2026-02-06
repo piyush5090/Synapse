@@ -1,13 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// 1. READ FROM STORAGE (Load saved email if it exists)
+// Only read TOKEN. Never trust user data from localStorage.
 const token = localStorage.getItem('token');
-const storedEmail = localStorage.getItem('email'); // <--- ADD THIS
 
 const initialState = {
   token: token || null,
-  isAuthenticated: !!token,
-  email: storedEmail || null, // <--- UPDATE THIS (Use storedEmail instead of null)
+  // If a token exists, we assume we are "loading" until the API verifies it.
+  // If no token, we are definitely not loaded and not authenticated.
+  isLoading: !!token, 
+  isAuthenticated: false, 
+  email: null,
   business: null,        
   social_accounts: [],   
 };
@@ -16,18 +18,30 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
+    // Call this when Login API succeeds OR /me endpoint succeeds
     loginSuccess: (state, action) => {
       const { email, token, business, social_accounts } = action.payload;
       
       state.token = token;
       state.email = email;
       state.isAuthenticated = true;
+      state.isLoading = false; // Verification complete
       state.business = business || null;
       state.social_accounts = social_accounts || [];
 
-      // 2. WRITE TO STORAGE (Save email on login)
+      // Only store the Token
       localStorage.setItem('token', token);
-      localStorage.setItem('email', email); // <--- ADD THIS
+    },
+
+    // Call this if /me fails (token expired/invalid)
+    authFailed: (state) => {
+      state.token = null;
+      state.isAuthenticated = false;
+      state.isLoading = false;
+      state.email = null;
+      state.business = null;
+      state.social_accounts = [];
+      localStorage.removeItem('token');
     },
 
     setBusiness: (state, action) => {
@@ -41,16 +55,16 @@ const userSlice = createSlice({
     logout: (state) => {
       state.token = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
       state.email = null;
       state.business = null;
       state.social_accounts = [];
       
-      // 3. CLEAR FROM STORAGE (Remove email on logout)
       localStorage.removeItem('token');
-      localStorage.removeItem('email'); // <--- ADD THIS
+      // No email removal needed because we never stored it
     },
   },
 });
 
-export const { loginSuccess, setBusiness, setSocialAccounts, logout } = userSlice.actions;
+export const { loginSuccess, authFailed, setBusiness, setSocialAccounts, logout } = userSlice.actions;
 export default userSlice.reducer;

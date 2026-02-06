@@ -99,3 +99,16 @@ export const logout = async (req, res) => {
       .json({ status: "Error", message: err.message });
   }
 };
+
+export const getMe = async (req, res) => {
+  // req.user is already set by the 'protect' middleware
+  if (req.user) {
+    res.status(200).json({
+      id: req.user.id,
+      email: req.user.email,
+      // Add other fresh fields if needed
+    });
+  } else {
+    res.status(401).json({ message: 'Not authorized' });
+  }
+};
