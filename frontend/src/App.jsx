@@ -86,18 +86,18 @@ function App() {
         <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
 
 
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/legal" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/docs" element={<DocumentationPage />} />
+          <Route path="/docs/system-token" element={<SystemTokenGuide />} />
+
         {/* --- 2. Layout Routes --- */}
         <Route element={<MainLayout />}>
           
           {/* A. Landing Page (Public) */}
           {/* If logged in, redirects to Dashboard. If not, shows Landing. */}
           <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
-          <Route path="/about" element={<PublicOnlyRoute><AboutPage /></PublicOnlyRoute>} />
-          <Route path="/legal" element={<PublicOnlyRoute><PrivacyPolicy /></PublicOnlyRoute>} />
-          <Route path="/terms" element={<PublicOnlyRoute><TermsOfService /></PublicOnlyRoute>} />
-          <Route path="/docs" element={<PublicOnlyRoute><DocumentationPage /></PublicOnlyRoute>} />
-          <Route path="/docs/system-token" element={<PublicOnlyRoute><SystemTokenGuide /></PublicOnlyRoute>} />
-
           {/* B. Protected Pages */}
           {/* ProtectedRoute already handles "If NOT logged in, go to Login" */}
           <Route element={<ProtectedRoute />}>
@@ -105,11 +105,6 @@ function App() {
             <Route path="/content" element={<ContentPage />} />
             <Route path="/schedule" element={<PostScheduler />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/about" element={<AboutPage />} />
-          <Route path="/legal" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/docs" element={<DocumentationPage />} />
-          <Route path="/docs/system-token" element={<SystemTokenGuide />} />
           </Route>
 
         </Route>
