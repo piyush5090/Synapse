@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { Command, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import logo from "../assets/logo.png"
 
 const SignupPage = () => {
   const [email, setEmail] = useState('');
@@ -70,7 +71,7 @@ const SignupPage = () => {
 
           {/* Header */}
           <div className="mb-8 flex flex-col text-center">
-            <img src="../../public/logo.png" alt="Synapse Logo" className="h-auto w-80" />
+            <img src={logo} alt="Synapse Logo" className="h-auto w-80" />
             <p className="mt-2 text-sm text-[#666]">
               Create your autonomous marketing workspace.
             </p>

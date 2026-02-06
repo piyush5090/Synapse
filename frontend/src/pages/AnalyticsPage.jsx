@@ -24,6 +24,7 @@ const AnalyticsPage = () => {
                 api.get('/analytics/top-posts?limit=10')
             ]);
 
+
             if (perfRes.data.status === 'Success') setRawPlatformData(perfRes.data.data);
             if (topRes.data.status === 'Success') {
                 const formatted = topRes.data.data.map(p => ({ ...p, count: p.clicks }));

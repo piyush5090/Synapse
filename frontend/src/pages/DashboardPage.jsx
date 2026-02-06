@@ -146,7 +146,7 @@ const DashboardPage = () => {
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
                               <Calendar size={16} />
                           </div>
-                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Upcoming Schedule</h2>
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Scheduled Content</h2>
                       </div>
 
                       {/* Right Action */}

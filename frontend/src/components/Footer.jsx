@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { Command, Github, Twitter, Linkedin } from "lucide-react";
+import logo from "/src/assets/logo.png";
+
 
 export default function Footer() {
   return (
@@ -10,7 +12,7 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="max-w-xs">
             <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-[#111]">
-              <img src="../../public/logo.png" alt="Synapse Logo" className="h-12 w-auto" />
+              <img src={logo} alt="Synapse Logo" className="h-12 w-auto" />
             </div>
             <p className="text-sm text-[#666] leading-relaxed mb-6">
               The operating system for automated brand growth. Built for creators who value their time.
@@ -27,10 +29,9 @@ export default function Footer() {
             <div>
               <h4 className="font-bold text-[#111] mb-6 text-sm uppercase tracking-wider">Product</h4>
               <ul className="space-y-3 text-sm text-[#666]">
-                <li><Link to="/features" className="hover:text-[#111] transition-colors">Generative Engine</Link></li>
-                <li><Link to="/integrations" className="hover:text-[#111] transition-colors">Integrations</Link></li>
-                <li><Link to="/changelog" className="hover:text-[#111] transition-colors">Changelog</Link></li>
-                <li><Link to="/docs" className="hover:text-[#111] transition-colors">Documentation</Link></li>
+                <li><Link to="#" className="hover:text-[#111] transition-colors">Integrations</Link></li>
+                <li><Link to="#" className="hover:text-[#111] transition-colors">Changelog</Link></li>
+                <li><Link to="#" className="hover:text-[#111] transition-colors">Documentation</Link></li>
               </ul>
             </div>
             <div>

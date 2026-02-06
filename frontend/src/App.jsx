@@ -14,6 +14,11 @@ import PostScheduler from './pages/PostScheduler';
 import LandingPage from './pages/LandingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import AboutPage from './pages/AboutPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import DocumentationPage from './pages/DocumentationPage';
+import SystemTokenGuide from './pages/docs/SystemTokenGuide';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -80,12 +85,18 @@ function App() {
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
 
+
         {/* --- 2. Layout Routes --- */}
         <Route element={<MainLayout />}>
           
           {/* A. Landing Page (Public) */}
           {/* If logged in, redirects to Dashboard. If not, shows Landing. */}
           <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
+          <Route path="/about" element={<PublicOnlyRoute><AboutPage /></PublicOnlyRoute>} />
+          <Route path="/legal" element={<PublicOnlyRoute><PrivacyPolicy /></PublicOnlyRoute>} />
+          <Route path="/terms" element={<PublicOnlyRoute><TermsOfService /></PublicOnlyRoute>} />
+          <Route path="/docs" element={<PublicOnlyRoute><DocumentationPage /></PublicOnlyRoute>} />
+          <Route path="/docs/system-token" element={<PublicOnlyRoute><SystemTokenGuide /></PublicOnlyRoute>} />
 
           {/* B. Protected Pages */}
           {/* ProtectedRoute already handles "If NOT logged in, go to Login" */}
