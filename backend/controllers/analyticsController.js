@@ -60,7 +60,9 @@ exports.getTopPerformingPosts = async (req, res, next) => {
           id,
           short_code,
           user_id,
+          created_at,
           scheduled_posts (
+             posted_at,
              social_accounts ( platform ),
              generated_posts ( caption, image_url )
           )

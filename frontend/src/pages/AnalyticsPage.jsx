@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Loader2 } from 'lucide-react';
 import PlatformChart from '../components/analytics/PlatformChart';
-import TopPostsTable from '../components/analytics/TopPostsTable';
+import TopPostsGallery from '../components/analytics/TopPostsGallery'; // NEW IMPORT
 import api from '../services/api'; 
 
 const AnalyticsPage = () => {
-  const [timeRange, setTimeRange] = useState('7'); // '7', '10', 'all'
+  const [timeRange, setTimeRange] = useState('7'); 
   const [loading, setLoading] = useState(true);
   
-  // Raw Data from API
+  // Data State
   const [rawPlatformData, setRawPlatformData] = useState({});
   const [topPosts, setTopPosts] = useState([]);
-
-  // Processed Data for UI
   const [chartData, setChartData] = useState([]);
   const [totals, setTotals] = useState({ facebook: 0, instagram: 0, total: 0 });
 
-  // --- 1. FETCH DATA ---
+  // 1. FETCH
   useEffect(() => {
     const fetchData = async () => {
         setLoading(true);
@@ -25,8 +23,6 @@ const AnalyticsPage = () => {
                 api.get('/analytics/platform-performance'),
                 api.get('/analytics/top-posts?limit=10')
             ]);
-
-            console.log(perfRes);
 
             if (perfRes.data.status === 'Success') setRawPlatformData(perfRes.data.data);
             if (topRes.data.status === 'Success') {
@@ -42,11 +38,10 @@ const AnalyticsPage = () => {
     fetchData();
   }, []);
 
-  // --- 2. PROCESS DATA (Filter & Graph) ---
+  // 2. PROCESS
   useEffect(() => {
     if (Object.keys(rawPlatformData).length === 0 && topPosts.length === 0) return;
 
-    // Helper: Get unique sorted dates
     const getAllDates = () => {
         const dates = new Set();
         Object.values(rawPlatformData).forEach(dateMap => {
@@ -61,22 +56,18 @@ const AnalyticsPage = () => {
         cutoff.setDate(new Date().getDate() - parseInt(timeRange));
     }
 
-    // Filter dates
     const filteredDates = timeRange === 'all' 
         ? allDates 
         : allDates.filter(d => new Date(d) >= cutoff);
 
-    // Build Chart Data & Totals
     let fbTotal = 0;
     let igTotal = 0;
 
     const processedChart = filteredDates.map(dateStr => {
         const fbCount = rawPlatformData['facebook']?.[dateStr] || 0;
         const igCount = rawPlatformData['instagram']?.[dateStr] || 0;
-        
         fbTotal += fbCount;
         igTotal += igCount;
-
         return {
             date: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             facebook: fbCount,
@@ -93,7 +84,12 @@ const AnalyticsPage = () => {
 
   }, [timeRange, rawPlatformData, topPosts]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
+  // --- LOADER FIX: Added bg-[#F8F9FC] ---
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#F8F9FC]">
+        <Loader2 className="animate-spin text-slate-400" size={32} />
+    </div>
+  );
 
   return (
     <div className="min-h-screen w-full bg-[#F8F9FC] text-slate-900 font-sans">
@@ -143,13 +139,15 @@ const AnalyticsPage = () => {
             </div>
         </div>
 
-        {/* CHARTS */}
+        {/* CHARTS & GALLERY */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
+            {/* Chart (2/3 width) */}
             <div className="lg:col-span-2 h-full min-h-[350px]">
                 <PlatformChart data={chartData} />
             </div>
+            {/* Gallery (1/3 width) */}
             <div className="lg:col-span-1 h-full min-h-[350px]">
-                <TopPostsTable posts={topPosts} />
+                <TopPostsGallery posts={topPosts} />
             </div>
         </div>
 
