@@ -6,25 +6,22 @@ const router = express.Router();
 // GET /r/:code
 // Example: http://localhost:3001/api/r/AbC12345
 router.get('/:code', async (req, res) => {
-    console.log("Headers:", req.headers);
   const { code } = req.params;
-  
-  // Browser info capture karo
-  const userAgent = req.headers['user-agent'];
-  const referrer = req.headers['referer'] || req.headers['referrer'];
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
   try {
-    const targetUrl = await trackClick(code, userAgent, referrer, ip);
+    // We no longer need to pass IP/UserAgent/Referrer
+    const targetUrl = await trackClick(code);
 
     if (targetUrl) {
-      // 301 Permanent Redirect -> SEO ke liye better hai, par analytics ke liye 302 Temporary better hai
-      // taaki browser cache na kare aur har click server tak aaye.
+      // 302 Temporary Redirect ensures the browser requests the server every time
+      // (crucial for accurate click counting)
       return res.redirect(302, targetUrl); 
     } else {
       return res.status(404).send(`
-        <h1>Link Not Found</h1>
-        <p>The link you are trying to access does not exist or has expired.</p>
+        <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+            <h1>Link Not Found</h1>
+            <p>The link you are trying to access does not exist or has expired.</p>
+        </div>
       `);
     }
   } catch (err) {

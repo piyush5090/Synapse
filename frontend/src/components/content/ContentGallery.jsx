@@ -72,7 +72,7 @@ const ContentGallery = () => {
           </div>
         </div>
 
-        {status === 'loading' && posts.length === 0 ? (
+        {status === 'loading' && posts.length > 0 ? (
           <div className="py-20 flex justify-center"><Loader2 size={32} className="animate-spin text-slate-300" /></div>
         ) : posts.length === 0 ? (
           <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50">
