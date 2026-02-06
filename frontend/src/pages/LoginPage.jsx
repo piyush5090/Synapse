@@ -82,13 +82,8 @@ const LoginPage = () => {
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#111] to-transparent opacity-10" />
 
           {/* Header */}
-          <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center h-10 w-10 bg-white border border-[#E5E5E5] rounded-xl mb-4 text-[#111] shadow-sm">
-              <Command size={20} />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#111]">
-              Synapse.
-            </h1>
+          <div className="mb-8 flex flex-col text-center">
+            <img src="../../public/logo.png" alt="Synapse Logo" className="h-auto w-80" />
             <p className="mt-2 text-sm text-[#666]">
               Enter credentials to initialize session.
             </p>
@@ -150,28 +145,8 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* OAuth Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-[#F0F0F0]" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase">
-              <span className="bg-white px-2 text-[#888] font-mono tracking-wider">Or continue with</span>
-            </div>
-          </div>
-
-          {/* Google Button */}
-          <button 
-             type="button" 
-             onClick={handleGoogleLogin}
-             className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm font-medium text-[#111] transition-all hover:bg-[#FAFAFA] hover:border-[#CCC] shadow-sm"
-           >
-             <GoogleLogo />
-             Google
-           </button>
-
           {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-[#F5F5F5] text-center">
+          <div className="pt-6 border-t border-[#F5F5F5] text-center">
             <p className="text-xs text-[#666]">
               Don't have an account?{' '}
               <Link
@@ -183,15 +158,6 @@ const LoginPage = () => {
             </p>
           </div>
         </div>
-
-        {/* Bottom System Status */}
-        <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-[#E5E5E5] shadow-sm">
-             <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-             <span className="text-[10px] font-mono text-[#666] uppercase tracking-wider">System v2.0 Operational</span>
-          </div>
-        </div>
-
       </motion.div>
     </div>
   );

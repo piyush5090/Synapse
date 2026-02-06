@@ -9,11 +9,8 @@ export default function Footer() {
           
           {/* Brand Column */}
           <div className="max-w-xs">
-            <div className="flex items-center gap-2 font-bold text-xl tracking-tight mb-4 text-[#111]">
-              <div className="h-6 w-6 bg-[#111] text-white flex items-center justify-center rounded-md">
-                <Command size={14} />
-              </div>
-              Synapse.
+            <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-[#111]">
+              <img src="../../public/logo.png" alt="Synapse Logo" className="h-12 w-auto" />
             </div>
             <p className="text-sm text-[#666] leading-relaxed mb-6">
               The operating system for automated brand growth. Built for creators who value their time.

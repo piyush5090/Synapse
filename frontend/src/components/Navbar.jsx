@@ -27,10 +27,7 @@ export default function Navbar() {
           to={isAuthenticated ? "/dashboard" : "/"} 
           className="group flex items-center gap-2.5 font-bold text-xl tracking-tight text-[#111] transition-opacity hover:opacity-80"
         >
-          <div className="h-7 w-7 bg-[#111] text-white flex items-center justify-center rounded-lg shadow-sm shadow-slate-300 group-hover:scale-105 transition-transform duration-300">
-            <Command size={15} strokeWidth={2.5} />
-          </div>
-          <span className="font-bold">Synapse.</span>
+          <img src="../../public/logo.png" alt="Synapse Logo" className="lg:h-12 w-auto h-10" />
         </Link>
 
         {/* --- Right Actions --- */}
@@ -91,8 +88,7 @@ export default function Navbar() {
                 to="/signup" 
                 className="group flex items-center gap-2 text-sm font-semibold bg-[#111] text-white px-5 py-2.5 rounded-xl hover:bg-black hover:shadow-lg hover:-translate-y-0.5 transition-all"
               >
-                <Sparkles size={14} className="text-yellow-300" />
-                Get Started
+                <p className="text-white" >Get Started</p>
               </Link>
             </div>
           )}
