@@ -19,6 +19,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import DocumentationPage from './pages/DocumentationPage';
 import SystemTokenGuide from './pages/docs/SystemTokenGuide';
+import EmailCampaignsPage from './pages/EmailCampaignsPage';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -104,6 +105,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/content" element={<ContentPage />} />
             <Route path="/schedule" element={<PostScheduler />} />
+            <Route path="/email-campaigns" element={<EmailCampaignsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
           </Route>
 

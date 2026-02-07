@@ -22,6 +22,9 @@ import metaRoutes from "./routes/meta_routes.js";
 import schedulerRoutes from "./routes/schedulerRoutes.js";
 import redirectRoutes from "./routes/redirectRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import emailTemplateRoutes from './routes/emailTemplateRoutes.js';
+import emailCampaignRoutes from './routes/emailCampaignRoutes.js';
+import emailSettingsRoutes from './routes/emailSettingsRoutes.js';
 
 // Initialize the Express app
 const app = express();
@@ -54,6 +57,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/scheduler', schedulerRoutes);
 app.use('/api/analytics',analyticsRoutes); 
+app.use('/api/email/templates', emailTemplateRoutes);
+app.use('/api/email/campaigns', emailCampaignRoutes);
+app.use('/api/email', emailSettingsRoutes);
+
 
 // --- Mount Redirect Router (NEW) ---
 // Note: Isse hum '/r' par mount karenge, '/api/r' par nahi, taaki link short dikhe.

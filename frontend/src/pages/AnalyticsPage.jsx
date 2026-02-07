@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Loader2 } from 'lucide-react';
 import PlatformChart from '../components/analytics/PlatformChart';
-import TopPostsGallery from '../components/analytics/TopPostsGallery'; // NEW IMPORT
+import TopPostsGallery from '../components/gallery/TopPostsGallery'; // NEW IMPORT
 import api from '../services/api'; 
 
 const AnalyticsPage = () => {

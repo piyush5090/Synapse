@@ -6,7 +6,7 @@ import { setGeneratedPosts, setPostsLoading } from '../features/posts/generatedP
 import { setScheduledPosts, setSchedulesLoading } from '../features/posts/scheduledPostsSlice';
 import api from '../services/api';
 
-// --- COMPONENTS ---
+// Components
 import BusinessProfileCard from '../cards/BusinessProfileCard';
 import MetaConnectionCard from '../cards/MetaConnectionCard';
 import ActionGrid from '../components/ActionGrid';
@@ -18,10 +18,10 @@ import { Loader2, Sparkles, Calendar, Mail, LayoutDashboard, ArrowRight } from '
 const DashboardPage = () => {
   const dispatch = useDispatch();
   
-  // Read from Redux
+  // Read data from Redux
   const { business } = useSelector((state) => state.user);
   
-  // Local Loading State for Initial Fetch (Skeleton logic)
+  // Loading State for Initial Fetch 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const DashboardPage = () => {
 
     const loadDashboardData = async () => {
       try {
-        // --- 1. Business & Socials (User Data) ---
+        // 1. Fetching Business and User's data
         let currentBusiness = business;
         if (!currentBusiness) {
              const businessRes = await api.get('/business'); 
@@ -42,8 +42,8 @@ const DashboardPage = () => {
              if (isMounted && metaRes.data.accounts) dispatch(setSocialAccounts(metaRes.data.accounts));
         }
 
-        // --- 2. Generated Posts ---
-        dispatch(setPostsLoading()); // Set loading in slice
+        // 2. Fetching Generated Posts (pagination)
+        dispatch(setPostsLoading()); 
         const postsRes = await api.get('/content?page=1&limit=5');
         if (isMounted && postsRes.data) {
             dispatch(setGeneratedPosts({
@@ -52,8 +52,8 @@ const DashboardPage = () => {
             }));
         }
 
-        // --- 3. Scheduled Posts ---
-        dispatch(setSchedulesLoading()); // Set loading in slice
+        // 3. Fetching Scheduled Posts (pagination)
+        dispatch(setSchedulesLoading()); 
         const schedRes = await api.get('/scheduler?page=1&limit=4');
         if (isMounted && schedRes.data) {
             dispatch(setScheduledPosts({

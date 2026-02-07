@@ -1,12 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Only read TOKEN. Never trust user data from localStorage.
+// Reading the token from localStorage 
 const token = localStorage.getItem('token');
 
+// Initializing the Initial state
 const initialState = {
   token: token || null,
-  // If a token exists, we assume we are "loading" until the API verifies it.
-  // If no token, we are definitely not loaded and not authenticated.
   isLoading: !!token, 
   isAuthenticated: false, 
   email: null,
@@ -14,6 +13,7 @@ const initialState = {
   social_accounts: [],   
 };
 
+// Creating the user slice 
 const userSlice = createSlice({
   name: 'user',
   initialState,

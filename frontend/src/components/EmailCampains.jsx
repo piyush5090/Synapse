@@ -1,56 +1,108 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Mail, Clock } from 'lucide-react';
+import { ArrowRight, Mail, Loader2, ArrowDownCircle } from 'lucide-react';
+import api from '../services/api';
+import ScheduledCampaignCard from '../cards/ScheduledCampaignCard';
 
 const EmailCampaigns = () => {
-  const campaigns = [
-     { id: 1, subject: "February Newsletter", status: "scheduled", time: "Feb 10, 9:00 AM", sent: 0 },
-     { id: 2, subject: "Welcome Series", status: "active", time: "Ongoing", sent: 1240 },
-  ];
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 3; // Show 3 items per page on dashboard
+
+  // --- Fetch Logic ---
+  const fetchCampaigns = async (pageNum = 1) => {
+    if (pageNum === 1) setLoading(true);
+    try {
+      const res = await api.get(`/email/campaigns?page=${pageNum}&limit=${LIMIT}`);
+      if (res.data.success) {
+        const newData = res.data.data;
+        if (pageNum === 1) {
+          setCampaigns(newData);
+        } else {
+          setCampaigns(prev => [...prev, ...newData]);
+        }
+        setHasMore(newData.length === LIMIT);
+      }
+    } catch (err) {
+      console.error("Failed to load campaigns", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns(1);
+  }, []);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchCampaigns(nextPage);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await api.delete(`/email/campaigns/${id}`);
+      if (res.data.success) {
+        setCampaigns(prev => prev.filter(c => c.id !== id));
+      }
+    } catch (err) {
+      alert("Failed to delete campaign");
+    }
+  };
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <div className="p-2 bg-sky-50 rounded-lg">
             <Mail size={20} className="text-sky-600"/>
-            <h2 className="text-xl font-bold text-[#111]">Email Campaigns</h2>
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">Email Campaigns</h2>
         </div>
-        <Link to="/email" className="flex items-center gap-1 text-sm font-medium text-[#666] hover:text-[#111]">
-            Manage Emails <ArrowRight size={16} />
+        <Link to="/email-campaigns" className="flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+            Manage Campaigns <ArrowRight size={16} />
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden">
-        {campaigns.length > 0 ? (
-             <table className="w-full text-left text-sm">
-                <thead className="bg-[#FAFAFA] border-b border-[#F0F0F0] text-[#888]">
-                    <tr>
-                        <th className="px-6 py-3 font-medium">Campaign</th>
-                        <th className="px-6 py-3 font-medium">Status</th>
-                        <th className="px-6 py-3 font-medium">Schedule</th>
-                        <th className="px-6 py-3 font-medium">Sent</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-[#F0F0F0]">
-                    {campaigns.map(camp => (
-                        <tr key={camp.id} className="group hover:bg-[#FAFAFA] transition-colors">
-                            <td className="px-6 py-4 font-medium text-[#111]">{camp.subject}</td>
-                            <td className="px-6 py-4">
-                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${camp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                    {camp.status}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-[#666] flex items-center gap-2">
-                                <Clock size={14} /> {camp.time}
-                            </td>
-                            <td className="px-6 py-4 text-[#111] font-mono">{camp.sent.toLocaleString()}</td>
-                        </tr>
-                    ))}
-                </tbody>
-             </table>
+      {/* List Container */}
+      <div className="space-y-3">
+        {loading && page === 1 ? (
+          /* Loading Skeleton */
+          [1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-white border border-slate-100 rounded-xl animate-pulse"></div>
+          ))
+        ) : campaigns.length === 0 ? (
+          /* Empty State */
+          <div className="p-8 text-center bg-white border border-slate-100 rounded-xl border-dashed">
+            <p className="text-sm text-slate-400">No active campaigns.</p>
+            <Link to="/email-campaigns" className="text-sm font-bold text-indigo-600 hover:underline mt-1 block">
+              Create your first blast
+            </Link>
+          </div>
         ) : (
-            <div className="p-8 text-center text-sm text-[#888]">
-                No active email campaigns.
-            </div>
+          /* Campaign Cards */
+          campaigns.map(camp => (
+            <ScheduledCampaignCard 
+              key={camp.id} 
+              campaign={camp} 
+              onDelete={handleDelete}
+            />
+          ))
+        )}
+
+        {/* Load More Button */}
+        {hasMore && !loading && campaigns.length > 0 && (
+          <button 
+            onClick={handleLoadMore}
+            className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:bg-white bg-slate-50 rounded-xl border border-dashed border-slate-200 transition-all flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowDownCircle className="w-3 h-3" />}
+            Load More
+          </button>
         )}
       </div>
     </div>

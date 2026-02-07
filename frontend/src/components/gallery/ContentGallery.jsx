@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { removeGeneratedPost, appendGeneratedPosts, setGeneratedPosts } from '../../features/posts/generatedPostsSlice';
 import api from '../../services/api';
 import { ArrowRight, Loader2, Trash2 } from 'lucide-react';
-import GeneratedPostModal from '../content/GeneratedPostModal'; // Import Modal
+import GeneratedPostModal from '../modals/GeneratedPostModal'; // Import Modal
 
 const ContentGallery = () => {
   const dispatch = useDispatch();

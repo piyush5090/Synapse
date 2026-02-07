@@ -5,8 +5,8 @@ import { setSocialAccounts } from '../features/user/userSlice';
 import api from '../services/api';
 
 // Components
-import ScheduleModal from '../components/scheduler/ScheduleModal';
-import ScheduleGallery from '../components/scheduler/ScheduleGallery';
+import ScheduleModal from '../components/modals/ScheduleModal';
+import ScheduleGallery from '../components/gallery/ScheduleGallery';
 import { Calendar, Plus } from 'lucide-react';
 
 const PostScheduler = () => {

@@ -4,7 +4,7 @@ import { removeScheduledPost, appendScheduledPosts, setScheduledPosts } from '..
 import api from '../../services/api';
 import { Loader2 } from 'lucide-react';
 import ScheduledPostCard from '../../cards/ScheduledPostCard'; 
-import ScheduledPostModal from '../scheduler/ScheduledPostModal'; // Import Modal
+import ScheduledPostModal from '../modals/ScheduledPostModal'; // Import Modal
 
 const ScheduleGallery = () => {
   const dispatch = useDispatch();
