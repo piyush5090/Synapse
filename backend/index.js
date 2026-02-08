@@ -1,8 +1,6 @@
 // Load environment variables
-import dns from 'dns';
 import dotenv from "dotenv";
 dotenv.config();
-dns.setDefaultResultOrder('ipv4first');
 
 // Core packages
 import express from "express";

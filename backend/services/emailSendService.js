@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+import { Resend } from "resend";
 import { decryptPassword } from "../utils/encryption.js";
 
 // Helper: Sleep function for rate limiting
@@ -14,13 +14,16 @@ export const executeEmailCampaign = async (campaign) => {
     throw new Error("Invalid campaign data structure.");
   }
 
-  // 🔐 Decrypt API key (instead of email password)
+  // 🔐 Decrypt Resend API key (instead of Gmail passkey)
   let apiKey;
   try {
     apiKey = decryptPassword(sender.passkey);
   } catch (e) {
     throw new Error("API key decryption failed.");
   }
+
+  // Initialize Resend client per sender
+  const resend = new Resend(apiKey);
 
   // --- PREPARE HTML CONTENT ---
   let finalHtml = template.content;
@@ -47,24 +50,13 @@ export const executeEmailCampaign = async (campaign) => {
 
   for (const recipientEmail of recipients) {
     try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: sender.email, // must be verified in Resend
-          to: recipientEmail,
-          subject: template.subject,
-          html: finalHtml,
-        }),
+      await resend.emails.send({
+        from: "FairShare <onboarding@resend.dev>", // use verified sender
+        to: recipientEmail,
+        subject: template.subject,
+        html: finalHtml,
+        reply_to: sender.email, // replies go to your Gmail
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
-      }
 
       successCount++;
     } catch (error) {
@@ -72,7 +64,7 @@ export const executeEmailCampaign = async (campaign) => {
       failCount++;
     }
 
-    await sleep(500); // keep your rate-limit
+    await sleep(500); // keep your rate limiting
   }
 
   return { successCount, failCount };
