@@ -23,8 +23,8 @@ export const executeEmailCampaign = async (campaign) => {
 
   // 👇 CHANGED SECTION: Explicit Configuration
   const transporter = nodemailer.createTransport({
-    host: 'Gmail', 
-    secure: true,           // Must be true for port 465
+    service: 'Gmail', 
+    //secure: true,           // Must be true for port 465
     auth: {
       user: sender.email,
       pass: realPassword,
