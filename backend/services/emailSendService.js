@@ -4,50 +4,43 @@ import { decryptPassword } from '../utils/encryption.js';
 // Helper: Sleep function for rate limiting
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Executes a single email campaign.
- * Handles decryption, transporter setup, and sending loop.
- * @param {Object} campaign - The campaign object from Supabase (with joined tables)
- * @returns {Promise<Object>} - Returns stats { successCount, failCount }
- */
 export const executeEmailCampaign = async (campaign) => {
-  // Destructure joined data
-  // Note: Supabase joins return objects like 'sender_emails': { email: ... }
   const sender = campaign.sender_emails;
   const template = campaign.email_templates;
-  const recipients = campaign.recipients; // Now this is ["a@b.com", ...]
+  const recipients = campaign.recipients; 
 
-  // 1. Validate Data
   if (!sender || !template || !recipients || recipients.length === 0) {
     console.error(`❌ Campaign ${campaign.id} missing data.`);
     throw new Error("Invalid campaign data structure.");
   }
 
-  // 2. Decrypt Password
   let realPassword;
   try {
     realPassword = decryptPassword(sender.passkey);
   } catch (e) {
-    throw new Error("Password decryption failed. Check encryption key.");
+    throw new Error("Password decryption failed.");
   }
 
-  // 3. Setup Transporter
+  // 👇 CHANGED SECTION: Explicit Configuration
   const transporter = nodemailer.createTransport({
-    service: sender.provider || 'gmail',
+    host: 'smtp.gmail.com', // Explicitly define Gmail host
+    port: 465,              // Explicitly define SSL port
+    secure: true,           // Must be true for port 465
     auth: {
       user: sender.email,
       pass: realPassword,
     },
-    family: 4,
+    // Network Settings
+    family: 4,              // ⚠️ FORCE IPv4 (Fixes ENETUNREACH)
+    connectionTimeout: 10000, // Fail fast if connection hangs
   });
 
-  // Verify Credentials Once
+  // Verify Credentials
   await transporter.verify(); 
 
-  // --- 4. PREPARE HTML CONTENT (The Fix) ---
+  // --- PREPARE HTML CONTENT ---
   let finalHtml = template.content;
 
-  // If there is an image, inject it at the top of the email
   if (template.image_url) {
     const imageHtml = `
       <div style="width: 100%; max-width: 600px; margin: 0 auto 20px auto;">
@@ -58,7 +51,6 @@ export const executeEmailCampaign = async (campaign) => {
         />
       </div>
     `;
-    // Prepend image to the content
     finalHtml = `${imageHtml}${finalHtml}`;
   }
 
@@ -67,14 +59,13 @@ export const executeEmailCampaign = async (campaign) => {
 
   console.log(`✉️ Sending "${template.subject}" to ${recipients.length} people via ${sender.email}...`);
 
-  // 5. Send Loop
   for (const recipientEmail of recipients) {
     try {
       await transporter.sendMail({
         from: `"${sender.email}" <${sender.email}>`,
         to: recipientEmail,
         subject: template.subject,
-        html: finalHtml, // ✅ Sends Image + Text now
+        html: finalHtml, 
       });
       
       successCount++;
@@ -83,7 +74,6 @@ export const executeEmailCampaign = async (campaign) => {
       failCount++;
     }
 
-    // Rate Limit: 500ms sleep
     await sleep(500);
   }
 
