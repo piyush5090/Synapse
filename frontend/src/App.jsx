@@ -17,9 +17,10 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import AboutPage from './pages/AboutPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
-import DocumentationPage from './pages/DocumentationPage';
+import DocumentationPage from './pages/docs/DocumentationPage';
 import SystemTokenGuide from './pages/docs/SystemTokenGuide';
 import EmailCampaignsPage from './pages/EmailCampaignsPage';
+import BrevoSetup from './pages/docs/BrevoSetup';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -92,6 +93,7 @@ function App() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/docs" element={<DocumentationPage />} />
           <Route path="/docs/system-token" element={<SystemTokenGuide />} />
+          <Route path="/docs/brevo-setup" element={<BrevoSetup />} />
 
         {/* --- 2. Layout Routes --- */}
         <Route element={<MainLayout />}>

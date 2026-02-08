@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Mail, Key, Loader2, X } from 'lucide-react';
+import { Mail, Key, Loader2, X, HelpCircle, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AddSenderModal = ({ isOpen, onClose, onSubmit, isSaving }) => {
   const [formData, setFormData] = useState({ email: '', passkey: '' });
@@ -12,11 +13,8 @@ const AddSenderModal = ({ isOpen, onClose, onSubmit, isSaving }) => {
     if (isOpen) {
       setShouldRender(true);
       setFormData({ email: '', passkey: '' }); // Reset form
-      
-      // Trigger Enter Animation
       requestAnimationFrame(() => setIsVisible(true));
     } else {
-      // Trigger Exit Animation
       setIsVisible(false);
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
@@ -44,7 +42,10 @@ const AddSenderModal = ({ isOpen, onClose, onSubmit, isSaving }) => {
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="font-bold text-lg text-slate-800">Add Sender</h3>
+          <div>
+            <h3 className="font-bold text-lg text-slate-800">Connect Sender</h3>
+            <p className="text-xs text-slate-500">Add your Brevo credentials</p>
+          </div>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-slate-200/50 transition-colors"
@@ -54,45 +55,65 @@ const AddSenderModal = ({ isOpen, onClose, onSubmit, isSaving }) => {
         </div>
         
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase">Email Address</label>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          
+          {/* Email Field */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 uppercase flex justify-between">
+              Sender Email
+            </label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               <input 
                 type="email" 
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                className="w-full pl-10 p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                className="w-full pl-10 p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all"
                 placeholder="marketing@company.com"
                 required 
               />
             </div>
+            <p className="text-[10px] text-slate-400 leading-tight">
+              Must match the email you verified in your Brevo dashboard.
+            </p>
           </div>
           
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase">App Password / Passkey</label>
+          {/* API Key Field */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 uppercase flex justify-between items-center">
+              Brevo API Key (v3)
+              <Link 
+                to="/docs/brevo-setup" 
+                target="_blank" 
+                className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-normal normal-case"
+              >
+                Where do I find this? <ExternalLink className="w-3 h-3" />
+              </Link>
+            </label>
             <div className="relative">
               <Key className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               <input 
                 type="password" 
                 value={formData.passkey}
                 onChange={e => setFormData({...formData, passkey: e.target.value})}
-                className="w-full pl-10 p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono"
-                placeholder="xxyy-zzzz-aabb-ccdd"
+                className="w-full pl-10 p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-mono transition-all"
+                placeholder="xkeysib-..."
                 required 
               />
             </div>
-            <p className="text-[10px] text-slate-400">Use an App Password for Gmail/Outlook. Do not use your login password.</p>
+            <div className="flex gap-2 items-start p-3 bg-amber-50 rounded-lg text-amber-800 text-[11px] leading-relaxed border border-amber-100">
+               <HelpCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+               <p>Do <strong>not</strong> use your login password. Generate a new API Key starting with <code>xkeysib-</code> from the "SMTP & API" tab in Brevo.</p>
+            </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-50 mt-4">
+          <div className="pt-2">
             <button 
               type="submit" 
               disabled={isSaving}
-              className="w-full py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 flex justify-center items-center gap-2 shadow-sm transition-transform active:scale-[0.98]"
+              className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-slate-200 transition-all active:scale-[0.98]"
             >
-              {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : "Save Credentials"}
+              {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : "Verify & Save Credentials"}
             </button>
           </div>
         </form>

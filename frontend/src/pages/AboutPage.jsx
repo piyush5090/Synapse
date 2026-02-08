@@ -1,4 +1,4 @@
-import { Github, Linkedin, Mail, Globe, Cpu, ShieldCheck, Zap } from 'lucide-react';
+import { Github, Linkedin, Mail, Globe, Cpu, LayoutGrid, Zap } from 'lucide-react';
 import piyushImg from '../assets/piyush.jpeg';
 
 const AboutPage = () => {
@@ -53,20 +53,20 @@ const AboutPage = () => {
              </div>
           </div>
 
-          {/* Feature B: Tall Card */}
+          {/* Feature B: Tall Card (REPLACED "Bot-Proof" with "Unified Dashboard") */}
           <div className="bg-white border border-slate-200 rounded-3xl p-8 flex flex-col shadow-sm hover:shadow-lg hover:border-purple-200 transition-all group relative overflow-hidden">
              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6 group-hover:rotate-12 transition-transform">
-               <ShieldCheck size={24} />
+               <LayoutGrid size={24} />
              </div>
-             <h3 className="text-xl font-bold text-slate-900 mb-2">Bot-Proof</h3>
+             <h3 className="text-xl font-bold text-slate-900 mb-2">Unified Control</h3>
              <p className="text-slate-500 text-sm mb-8 flex-1">
-               Heuristic filtering blocks 99.9% of crawler bots, ensuring your analytics reflect real humans only.
+               Manage multiple social accounts, campaigns, and content streams from a single, intuitive interface.
              </p>
-             {/* Abstract Chart */}
-             <div className="h-24 bg-slate-50 rounded-xl border border-slate-100 relative overflow-hidden">
-                <div className="absolute bottom-0 left-4 w-4 h-10 bg-slate-200 rounded-t-sm" />
-                <div className="absolute bottom-0 left-10 w-4 h-16 bg-purple-500 shadow-lg rounded-t-sm" />
-                <div className="absolute bottom-0 left-16 w-4 h-8 bg-slate-200 rounded-t-sm" />
+             {/* Abstract Grid UI */}
+             <div className="h-24 grid grid-cols-2 gap-2 opacity-50">
+                <div className="bg-purple-100 rounded-lg h-full w-full animate-pulse"></div>
+                <div className="bg-slate-100 rounded-lg h-full w-full"></div>
+                <div className="bg-slate-100 rounded-lg h-full w-full col-span-2"></div>
              </div>
           </div>
 
@@ -96,7 +96,7 @@ const AboutPage = () => {
           <div className="relative bg-white border border-slate-200 rounded-[1.8rem] p-3 overflow-hidden shadow-sm">
             
             {/* Image Area */}
-            <div className="h-90 bg-slate-100 rounded-3xl overflow-hidden relative group">
+            <div className="h-96 bg-slate-100 rounded-3xl overflow-hidden relative group">
                {/* Replace with your image */}
                <img 
                  src={piyushImg} 

@@ -132,10 +132,10 @@ export default function Navbar() {
                         <LayoutDashboard size={20} className="text-purple-600" /> Dashboard
                      </Link>
                 )}
-                <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
+                <Link to="/about" target="_blank" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
                     <Info size={20} className="text-blue-600" /> About
                 </Link>
-                <Link to="/docs" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
+                <Link to="/docs" target="_blank" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
                     <BookOpen size={20} className="text-amber-600" /> Documentation
                 </Link>
             </div>
