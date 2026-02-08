@@ -23,20 +23,19 @@ export const executeEmailCampaign = async (campaign) => {
 
   // 👇 CHANGED SECTION: Explicit Configuration
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', // Explicitly define Gmail host
-    port: 465,              // Explicitly define SSL port
+    host: 'Gmail', 
     secure: true,           // Must be true for port 465
     auth: {
       user: sender.email,
       pass: realPassword,
     },
-    // Network Settings
-    family: 4,              // ⚠️ FORCE IPv4 (Fixes ENETUNREACH)
-    connectionTimeout: 10000, // Fail fast if connection hangs
+    // // Network Settings
+    // family: 4,              // ⚠️ FORCE IPv4 (Fixes ENETUNREACH)
+    // connectionTimeout: 10000, // Fail fast if connection hangs
   });
 
   // Verify Credentials
-  await transporter.verify(); 
+  //await transporter.verify(); 
 
   // --- PREPARE HTML CONTENT ---
   let finalHtml = template.content;
