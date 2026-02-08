@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
-import { decryptPassword } from '../utils/encryption.js';
+import fetch from "node-fetch";
+import { decryptPassword } from "../utils/encryption.js";
 
 // Helper: Sleep function for rate limiting
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -7,35 +7,20 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const executeEmailCampaign = async (campaign) => {
   const sender = campaign.sender_emails;
   const template = campaign.email_templates;
-  const recipients = campaign.recipients; 
+  const recipients = campaign.recipients;
 
   if (!sender || !template || !recipients || recipients.length === 0) {
     console.error(`❌ Campaign ${campaign.id} missing data.`);
     throw new Error("Invalid campaign data structure.");
   }
 
-  let realPassword;
+  // 🔐 Decrypt API key (instead of email password)
+  let apiKey;
   try {
-    realPassword = decryptPassword(sender.passkey);
+    apiKey = decryptPassword(sender.passkey);
   } catch (e) {
-    throw new Error("Password decryption failed.");
+    throw new Error("API key decryption failed.");
   }
-
-  // 👇 CHANGED SECTION: Explicit Configuration
-  const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: sender.email,
-    pass: realPassword,
-  },
-  requireTLS: true,
-});
-
-
-  // Verify Credentials
-  //await transporter.verify(); 
 
   // --- PREPARE HTML CONTENT ---
   let finalHtml = template.content;
@@ -56,24 +41,38 @@ export const executeEmailCampaign = async (campaign) => {
   let successCount = 0;
   let failCount = 0;
 
-  console.log(`✉️ Sending "${template.subject}" to ${recipients.length} people via ${sender.email}...`);
+  console.log(
+    `✉️ Sending "${template.subject}" to ${recipients.length} people via Resend (${sender.email})...`
+  );
 
   for (const recipientEmail of recipients) {
     try {
-      await transporter.sendMail({
-        from: `"${sender.email}" <${sender.email}>`,
-        to: recipientEmail,
-        subject: template.subject,
-        html: finalHtml, 
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: sender.email, // must be verified in Resend
+          to: recipientEmail,
+          subject: template.subject,
+          html: finalHtml,
+        }),
       });
-      
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
       successCount++;
     } catch (error) {
       console.error(`Failed to send to ${recipientEmail}:`, error.message);
       failCount++;
     }
 
-    await sleep(500);
+    await sleep(500); // keep your rate-limit
   }
 
   return { successCount, failCount };
