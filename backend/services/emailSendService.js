@@ -38,6 +38,7 @@ export const executeEmailCampaign = async (campaign) => {
       user: sender.email,
       pass: realPassword,
     },
+    family: 4,
   });
 
   // Verify Credentials Once
