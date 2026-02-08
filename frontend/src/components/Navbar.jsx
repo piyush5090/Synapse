@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../features/user/userSlice";
-import { LogOut, Menu, X, BookOpen, Info, LayoutDashboard } from "lucide-react";
+import { logOut } from '../features/user/userSlice';
+import { LogOut, Menu, X, BookOpen, Info, LayoutDashboard, Shield } from "lucide-react";
 import logo from "../assets/logo.png"; 
 
 export default function Navbar() {
@@ -11,11 +11,11 @@ export default function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Get auth state from Redux
-  const { isAuthenticated, email } = useSelector((state) => state.user);
+  // Get auth state AND full user object (for role check)
+  const { isAuthenticated, email, user } = useSelector((state) => state.user);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logOut());
     setIsMobileMenuOpen(false);
     navigate("/login");
   };
@@ -66,6 +66,17 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
+              
+              {/* --- ADMIN LINK (Conditional) --- */}
+              {user?.role === 'admin' && (
+                <Link 
+                  to="/admin" 
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-all shadow-md shadow-slate-200 mr-2"
+                >
+                  <Shield className="text-white" size={12} /> <p className="text-white" > Admin </p>
+                </Link>
+              )}
+
               <div className="flex items-center gap-3 pl-1.5 pr-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm cursor-default select-none">
                 <div className="h-7 w-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white">
                     {userInitial}
@@ -128,9 +139,18 @@ export default function Navbar() {
             {/* Mobile Links */}
             <div className="flex flex-col gap-4 text-lg font-medium text-slate-900 border-b border-slate-200 pb-8 mb-8">
                 {isAuthenticated && (
-                     <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
-                        <LayoutDashboard size={20} className="text-purple-600" /> Dashboard
-                     </Link>
+                     <>
+                        <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
+                           <LayoutDashboard size={20} className="text-purple-600" /> Dashboard
+                        </Link>
+                        
+                        {/* --- MOBILE ADMIN LINK --- */}
+                        {user?.role === 'admin' && (
+                          <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 bg-slate-900 text-white shadow-lg rounded-xl transition-all">
+                             <Shield size={20} className="text-yellow-400" /> Admin Console
+                          </Link>
+                        )}
+                     </>
                 )}
                 <Link to="/about" target="_blank" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all">
                     <Info size={20} className="text-blue-600" /> About
@@ -141,7 +161,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Actions */}
-            <div className="mt-auto pb-20"> {/* Extra padding bottom for safe area */}
+            <div className="mt-auto pb-20"> 
                 {isAuthenticated ? (
                     <div className="space-y-4">
                         <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">

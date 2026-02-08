@@ -101,14 +101,48 @@ export const logout = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-  // req.user is already set by the 'protect' middleware
-  if (req.user) {
+  try {
+    // 1. req.user is already verified by the 'protect' middleware
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authorized' });
+
+    // 2. Fetch Public Profile (Role, Ban Status)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+        console.warn("Profile fetch error:", profileError.message);
+    }
+
+    // 3. Fetch Business Details
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    // 4. Fetch Social Accounts
+    const { data: socialAccounts } = await supabase
+      .from('social_accounts')
+      .select('*')
+      .eq('user_id', user.id);
+
+    // 5. Return Consolidated Object
+    // This structure matches exactly what your userSlice.js -> loginSuccess expects
     res.status(200).json({
-      id: req.user.id,
-      email: req.user.email,
-      // Add other fresh fields if needed
+      id: user.id,
+      email: user.email,
+      role: profile?.role || 'user',         // Critical for Admin Check
+      is_banned: profile?.is_banned || false,
+      business: business || null,
+      social_accounts: socialAccounts || []
     });
-  } else {
-    res.status(401).json({ message: 'Not authorized' });
+
+  } catch (err) {
+    console.error("GetMe Error:", err.message);
+    res.status(500).json({ message: "Server Error" });
   }
 };

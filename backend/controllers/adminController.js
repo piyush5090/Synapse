@@ -1,8 +1,10 @@
 const supabase = require('../config/supabaseClient');
 
-// --- USER MANAGEMENT ---
+// ==========================================
+//              USER MANAGEMENT
+// ==========================================
 
-// 1. Get All Users (with Pagination)
+// 1. Get All Users
 const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -10,7 +12,6 @@ const getAllUsers = async (req, res) => {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
-    // Fetch profiles (which mirrors users)
     const { data, count, error } = await supabase
       .from('profiles')
       .select('*', { count: 'exact' })
@@ -19,14 +20,7 @@ const getAllUsers = async (req, res) => {
 
     if (error) throw error;
 
-    res.json({
-      status: 'success',
-      results: data.length,
-      total_users: count,
-      total_pages: Math.ceil(count / limit),
-      current_page: page,
-      data
-    });
+    res.json({ status: 'success', total_users: count, page, data });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -36,13 +30,8 @@ const getAllUsers = async (req, res) => {
 const toggleBanUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { banStatus } = req.body; // true = ban, false = unban
+    const { banStatus } = req.body; 
 
-    if (typeof banStatus !== 'boolean') {
-      return res.status(400).json({ status: 'error', message: 'banStatus must be boolean' });
-    }
-
-    // Prevent banning yourself
     if (userId === req.user.id) {
       return res.status(400).json({ status: 'error', message: 'You cannot ban yourself.' });
     }
@@ -54,20 +43,40 @@ const toggleBanUser = async (req, res) => {
       .select();
 
     if (error) throw error;
-
-    res.json({ 
-      status: 'success', 
-      message: banStatus ? `User ${userId} has been BANNED.` : `User ${userId} is now Active.`,
-      data 
-    });
+    res.json({ status: 'success', message: 'User status updated', data });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-// --- CONTENT MANAGEMENT ---
+// 3. Delete User
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (userId === req.user.id) {
+      return res.status(400).json({ status: 'error', message: 'You cannot delete yourself.' });
+    }
 
-// 3. Get All Generated Posts (Admin View)
+    // Deleting from profiles triggers cascade to other tables
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (error) throw error;
+    res.json({ status: 'success', message: 'User deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+
+// ==========================================
+//           CONTENT MANAGEMENT
+// ==========================================
+
+// 4. Get Generated Posts (Social)
 const getAllGeneratedPosts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -75,63 +84,53 @@ const getAllGeneratedPosts = async (req, res) => {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
-    // Join with 'profiles' to show email of the creator
-    // NOTE: 'user_id' in generated_posts must reference profiles.id for this to work
+    // Join with profiles to get email
     const { data, count, error } = await supabase
       .from('generated_posts')
-      .select('*, profiles(email, role, is_banned)', { count: 'exact' })
+      .select('*, profiles(id, email, role, is_banned)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(start, end);
 
     if (error) throw error;
 
-    res.json({
-      status: 'success',
-      total_posts: count,
-      page,
-      data
-    });
+    res.json({ status: 'success', total: count, page, data });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-// 4. Get All Scheduled Posts
-const getAllScheduledPosts = async (req, res) => {
+// 5. Get Email Templates (Mails)
+const getAllEmailTemplates = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
+    // Join with profiles to get email
     const { data, count, error } = await supabase
-      .from('scheduled_posts')
-      .select('*, profiles(email, role, is_banned)', { count: 'exact' })
-      .order('scheduled_at', { ascending: false }) // Show upcoming first
+      .from('email_templates')
+      .select('*, profiles(id, email, role, is_banned)', { count: 'exact' })
+      .order('created_at', { ascending: false })
       .range(start, end);
 
     if (error) throw error;
 
-    res.json({
-      status: 'success',
-      total_scheduled: count,
-      page,
-      data
-    });
+    res.json({ status: 'success', total: count, page, data });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-// 5. Delete Any Post (Moderation)
+// 6. Generic Delete Content (Handles both tables)
 const deleteContent = async (req, res) => {
   try {
-    const { type, id } = req.params; // type = 'generated' or 'scheduled'
+    const { type, id } = req.params; 
     let table = '';
 
-    if (type === 'generated') table = 'generated_posts';
-    else if (type === 'scheduled') table = 'scheduled_posts';
-    else return res.status(400).json({ error: 'Invalid type' });
+    if (type === 'social') table = 'generated_posts';
+    else if (type === 'mail') table = 'email_templates';
+    else return res.status(400).json({ error: 'Invalid content type' });
 
     const { error } = await supabase
       .from(table)
@@ -140,8 +139,9 @@ const deleteContent = async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ status: 'success', message: 'Content deleted by Admin.' });
+    res.json({ status: 'success', message: 'Content deleted.' });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -149,7 +149,8 @@ const deleteContent = async (req, res) => {
 module.exports = {
   getAllUsers,
   toggleBanUser,
+  deleteUser,
   getAllGeneratedPosts,
-  getAllScheduledPosts,
+  getAllEmailTemplates,
   deleteContent
 };

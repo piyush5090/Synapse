@@ -1,31 +1,33 @@
 const express = require('express');
 const router = express.Router();
+const { requireAdmin, protect } = require('../middleware/authMiddleware');
 
-// Middleware
-const {requireAdmin, protect } = require('../middleware/authMiddleware');
-
-// Controller
 const {
   getAllUsers,
   toggleBanUser,
+  deleteUser,
   getAllGeneratedPosts,
-  getAllScheduledPosts,
+  getAllEmailTemplates,
   deleteContent
 } = require('../controllers/adminController');
 
-// All routes here are protected AND admin-only
+// All routes protected + admin only
 router.use(protect);
 router.use(requireAdmin);
 
-// User Routes
+// --- User Routes ---
 router.get('/users', getAllUsers);
-router.patch('/users/:userId/ban', toggleBanUser); // Body: { banStatus: true/false }
+router.patch('/users/:userId/ban', toggleBanUser);
+router.delete('/users/:userId', deleteUser);
 
-// Content Routes
-router.get('/content/generated', getAllGeneratedPosts);
-router.get('/content/scheduled', getAllScheduledPosts);
+// --- Generated Social Content Routes ---
+router.get('/content/social', getAllGeneratedPosts);
 
-// Delete Content (:type = 'generated' or 'scheduled')
+// --- Generated Mail Routes ---
+router.get('/content/mail', getAllEmailTemplates);
+
+// --- Delete Content Route ---
+// :type can be 'social' (for posts) or 'mail' (for templates)
 router.delete('/content/:type/:id', deleteContent);
 
 module.exports = router;
