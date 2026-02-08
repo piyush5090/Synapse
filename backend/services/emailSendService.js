@@ -23,16 +23,16 @@ export const executeEmailCampaign = async (campaign) => {
 
   // 👇 CHANGED SECTION: Explicit Configuration
   const transporter = nodemailer.createTransport({
-    service: 'gmail', 
-    //secure: true,           // Must be true for port 465
-    auth: {
-      user: sender.email,
-      pass: realPassword,
-    },
-    // // Network Settings
-    // family: 4,              // ⚠️ FORCE IPv4 (Fixes ENETUNREACH)
-    // connectionTimeout: 10000, // Fail fast if connection hangs
-  });
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: sender.email,
+    pass: realPassword,
+  },
+  requireTLS: true,
+});
+
 
   // Verify Credentials
   //await transporter.verify(); 
