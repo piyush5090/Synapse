@@ -25,6 +25,7 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import emailTemplateRoutes from './routes/emailTemplateRoutes.js';
 import emailCampaignRoutes from './routes/emailCampaignRoutes.js';
 import emailSettingsRoutes from './routes/emailSettingsRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 // Initialize the Express app
 const app = express();
@@ -60,6 +61,7 @@ app.use('/api/analytics',analyticsRoutes);
 app.use('/api/email/templates', emailTemplateRoutes);
 app.use('/api/email/campaigns', emailCampaignRoutes);
 app.use('/api/email', emailSettingsRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 // --- Mount Redirect Router (NEW) ---

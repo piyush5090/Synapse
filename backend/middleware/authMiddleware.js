@@ -9,37 +9,68 @@ const protect = async (req, res, next) => {
         req.headers.authorization.startsWith('Bearer')
     ) {
         try {
-            // Extract the token from the header (format: "Bearer token")
+            // Extract the token
             token = req.headers.authorization.split(' ')[1];
             
             if (!token) {
                  return res.status(401).json({ status: 'Error', message: 'Not authorized, token missing.' });
             }
 
-            // 2. Verify the token using Supabase
-            // Note: Supabase's getSessionFromCookie() is used for browser cookies, 
-            // but for a Bearer token, we use the global setAuth().
-            
-            const { data, error } = await supabase.auth.getUser(token);
+            // 2. Verify the token using Supabase Auth
+            const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-            if (error) throw error;
+            if (authError || !user) {
+                throw new Error('Invalid token');
+            }
 
-            // 3. Attach the validated user object (UID) to the request object
-            // This allows subsequent route handlers to know WHO the user is.
-            req.user = data.user;
+            // --- NEW SECTION: CHECK BAN STATUS ---
             
-            // 4. Proceed to the next middleware or route handler
+            // 3. Check public.profiles for ban status & role
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('is_banned, role')
+                .eq('id', user.id)
+                .single();
+
+            // If profile doesn't exist yet (rare race condition), we typically allow it or error out.
+            // Here we proceed but log a warning.
+            if (profileError) {
+                console.warn(`Profile missing for user ${user.id}`);
+            }
+
+            // 4. BLOCK BANNED USERS
+            if (profile && profile.is_banned) {
+                return res.status(403).json({ 
+                    status: 'Forbidden', 
+                    message: 'Account suspended. Please contact support.' 
+                });
+            }
+
+            // 5. Attach user & role to request
+            req.user = user;
+            req.user.role = profile?.role || 'user'; // Attach role for future admin checks
+            
             next();
 
         } catch (error) {
-            console.error('JWT verification failed:', error.message);
-            // Common errors: Expired token, invalid signature
-            res.status(401).json({ status: 'Error', message: 'Not authorized, invalid token or token expired.' });
+            console.error('Auth verification failed:', error.message);
+            res.status(401).json({ status: 'Error', message: 'Not authorized, invalid token.' });
         }
     } else {
-        // No token found in header
-        res.status(401).json({ status: 'Error', message: 'Not authorized, no token found in header.' });
+        res.status(401).json({ status: 'Error', message: 'Not authorized, no token found.' });
     }
 };
 
-module.exports = { protect };
+const requireAdmin = (req, res, next) => {
+  // We assume authMiddleware has already run and attached req.user
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ 
+      status: 'Forbidden', 
+      message: 'Access denied. Admin privileges required.' 
+    });
+  }
+};
+
+module.exports = { requireAdmin, protect };
