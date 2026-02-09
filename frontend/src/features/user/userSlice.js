@@ -58,7 +58,7 @@ const userSlice = createSlice({
       state.social_accounts = action.payload;
     },
 
-    logout: (state) => {
+    logOut: (state) => {
       state.token = null;
       state.isAuthenticated = false;
       state.isLoading = false;
